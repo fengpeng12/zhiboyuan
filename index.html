@@ -4,298 +4,898 @@
     <meta charset="utf-8">
     <title>直播源检测 v1.4.0</title>
     <style>
-        /* 基本样式 */
-        body { font-family: sans-serif; margin: 20px; background: #fff; }
-        .card { background: #f5f5f5; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        h2 { margin: 0 0 15px 0; color: #2c80ff; }
-        input, select, button, textarea { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        button { background: #2c80ff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        .stats { display: flex; justify-content: space-between; margin-top: 15px; text-align: center; }
-        .stat { flex: 1; }
-        .stat-value { font-size: 24px; font-weight: bold; color: #2c80ff; }
-        .stat-label { font-size: 12px; color: #666; }
-        .notification { position: fixed; top: 20px; right: 20px; padding: 15px; background: #4CAF50; color: white; border-radius: 8px; display: none; }
-        .player-container { margin-top: 20px; padding: 10px; background: #fff; border-radius: 8px; }
-        .player-container video { width: 100%; max-height: 300px; border-radius: 8px; }
-        .source-list { max-height: 400px; overflow-y: auto; margin: 15px 0; }
-        .source-item { display: flex; align-items: center; padding: 10px; margin: 5px 0; background: white; border-radius: 6px; }
-        .source-item:hover { background: #f0f8ff; }
-        .channel-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-        .channel-url { font-size: 12px; color: #666; word-break: break-all; margin-bottom: 5px; }
-        .setting-group { display: flex; gap: 15px; margin: 10px 0; }
-        .setting-item { flex: 1; }
-        .setting-item label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .button-group { display: flex; gap: 10px; }
-        .progress { background: #e0e0e0; border-radius: 4px; height: 10px; margin: 10px 0; overflow: hidden; }
-        .progress-bar { background: #2c80ff; height: 100%; width: 0%; transition: width 0.3s; }
-        .filter-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
-        .filter-btn { padding: 8px 16px; background: #e0e0e0; color: #333; border-radius: 6px; cursor: pointer; font-weight: normal; }
-        .filter-btn.active { background: #2c80ff; color: white; }
-        .check-time { 
-            font-size: 11px; 
-            color: #666;
-            background: #f0f0f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-right: 5px;
-            font-family: monospace;
-        }
-        .check-time.success { background: #e8f5e9; color: #2e7d32; }
-        .check-time.failed { background: #ffebee; color: #c62828; }
-        .check-time.pending { background: #e3f2fd; color: #1565c0; }
-        .right-section { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            flex-shrink: 0;
-        }
-        .example-links { margin-top: 5px; font-size: 12px; color: #666; }
-        .example-link { color: #2c80ff; cursor: pointer; text-decoration: underline; margin: 0 5px; }
-        .example-link:hover { color: #1a5bbf; }
-        .loading-indicator { display: none; text-align: center; padding: 10px; color: #2c80ff; }
-        .version-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #2c80ff;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+/* 基础重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 整体样式 */
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    min-height: 100vh;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* 卡片样式优化 */
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2c80ff, #1a5bbf);
+    border-radius: 16px 16px 0 0;
+}
+
+/* 标题样式 */
+h2 {
+    margin: 0 0 20px 0;
+    color: #1a5bbf;
+    font-size: 1.5rem;
+    font-weight: 600;
+    position: relative;
+    padding-left: 12px;
+}
+
+h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(180deg, #2c80ff, #4c9cff);
+    border-radius: 2px;
+}
+
+/* 表单元素样式优化 */
+input, select, button, textarea {
+    padding: 14px;
+    border: 2px solid #e1e5eb;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #2c80ff;
+    box-shadow: 0 0 0 3px rgba(44, 128, 255, 0.1);
+}
+
+input::placeholder {
+    color: #a0aec0;
+}
+
+/* 按钮样式优化 */
+button {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 14px 24px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+button:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(44, 128, 255, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 统计区域优化 */
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    text-align: center;
+    gap: 15px;
+}
+
+.stat {
+    flex: 1;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.3s ease;
+}
+
+.stat:hover {
+    transform: translateY(-3px);
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2c80ff, #4c9cff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 通知样式优化 */
+.notification {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+    border-radius: 12px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 6px 20px rgba(56, 161, 105, 0.3);
+    animation: slideIn 0.3s ease;
+    border-left: 4px solid #68d391;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 播放器容器优化 */
+.player-container {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.player-container video {
+    width: 100%;
+    max-height: 400px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: #000;
+}
+
+/* 直播源列表优化 */
+.source-list {
+    max-height: 500px;
+    overflow-y: auto;
+    margin: 20px 0;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+}
+
+.source-item {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    margin: 0;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.source-item:hover {
+    background: linear-gradient(90deg, rgba(44, 128, 255, 0.05) 0%, rgba(44, 128, 255, 0.02) 100%);
+    transform: translateX(4px);
+}
+
+.source-item:last-child {
+    border-bottom: none;
+}
+
+.channel-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 6px;
+    color: #2d3748;
+}
+
+.channel-url {
+    font-size: 13px;
+    color: #718096;
+    word-break: break-all;
+    margin-bottom: 6px;
+    font-family: 'Consolas', monospace;
+}
+
+/* 设置组优化 */
+.setting-group {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.setting-item {
+    flex: 1;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+/* 进度条优化 */
+.progress {
+    background: #e2e8f0;
+    border-radius: 10px;
+    height: 12px;
+    margin: 20px 0;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #2c80ff 0%, #4c9cff 100%);
+    height: 100%;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* 筛选按钮优化 */
+.filter-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+    color: #4a5568;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    border-color: #2c80ff;
+    box-shadow: 0 4px 12px rgba(44, 128, 255, 0.3);
+}
+
+/* 版本徽章优化 */
+.version-badge {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(44, 128, 255, 0.3);
+    border: 2px solid white;
+}
+
+/* 播放状态优化 */
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.player-title {
+    font-weight: 600;
+    color: #2c80ff;
+    font-size: 18px;
+}
+
+.player-status {
+    font-size: 13px;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.player-status.playing {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.player-status.error {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+}
+
+.player-status.idle {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+.player-status.loading {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+}
+
+/* 播放控制优化 */
+.player-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.player-controls button {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 8px;
+    min-width: 100px;
+}
+
+.stop-btn {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+}
+
+.stop-btn:hover {
+    background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(229, 62, 62, 0.3);
+}
+
+/* 队列状态优化 */
+.queue-status {
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.queue-item {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 8px;
+    margin: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e2e8f0;
+    color: #718096;
+    transition: all 0.3s ease;
+}
+
+.queue-item.active {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    transform: scale(1.1);
+}
+
+.queue-item.pending {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    color: white;
+}
+
+.queue-item.success {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+}
+
+.queue-item.failed {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    color: white;
+}
+
+/* 紧凑布局优化 */
+.compact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.compact-header h2 {
+    margin: 0;
+}
+
+/* 导入容器优化 */
+.compact-import-container {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.import-section-compact {
+    flex: 1;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.3s ease;
+}
+
+.import-section-compact:hover {
+    transform: translateY(-3px);
+}
+
+.import-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c80ff;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.file-import-row, .url-import-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.file-import-row input[type="file"] {
+    flex: 1;
+    padding: 12px;
+    background: white;
+    cursor: pointer;
+}
+
+.file-import-row input[type="file"]::file-selector-button {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 12px;
+}
+
+.url-import-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 分组选择器优化 */
+.group-dropdown-compact {
+    position: relative;
+    width: 100%;
+}
+
+.group-dropdown-toggle-compact {
+    width: 100%;
+    padding: 16px;
+    background: white;
+    border: 2px solid #e1e5eb;
+    border-radius: 12px;
+    font-size: 16px;
+    color: #4a5568;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.group-dropdown-toggle-compact:hover {
+    border-color: #2c80ff;
+    box-shadow: 0 4px 12px rgba(44, 128, 255, 0.1);
+}
+
+.group-dropdown-menu-compact {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #e1e5eb;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.group-dropdown-option-compact {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.group-dropdown-option-compact:hover {
+    background: linear-gradient(90deg, rgba(44, 128, 255, 0.1) 0%, rgba(44, 128, 255, 0.05) 100%);
+}
+
+.group-dropdown-option-compact.selected {
+    background: linear-gradient(90deg, rgba(44, 128, 255, 0.2) 0%, rgba(44, 128, 255, 0.1) 100%);
+    color: #2c80ff;
+}
+
+.group-dropdown-footer-compact {
+    padding: 16px 20px;
+    border-top: 2px solid #f1f5f9;
+    background: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+    bottom: 0;
+}
+
+/* 分组面板优化 */
+.groups-panel {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e1e5eb;
+    margin-top: 24px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.groups-panel.expanded {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.groups-panel-header {
+    padding: 20px;
+    border-bottom: 2px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+}
+
+.groups-panel-content {
+    padding: 24px;
+}
+
+.groups-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.group-item {
+    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    border-radius: 10px;
+    padding: 14px 20px;
+    border: 2px solid #e1e5eb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 200px;
+}
+
+.group-item:hover {
+    background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+    border-color: #81e6d9;
+    transform: translateY(-3px);
+}
+
+.group-item.selected {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+    color: white;
+    border-color: #2c80ff;
+    box-shadow: 0 4px 15px rgba(44, 128, 255, 0.3);
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+    
+    .card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .compact-import-container {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .setting-group {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .stats {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .stat {
+        flex: calc(50% - 6px);
+    }
+    
+    .group-item {
+        min-width: 100%;
+    }
+    
+    .filter-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .version-badge {
+        position: relative;
+        top: 0;
+        right: 0;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+}
+
+@media (max-width: 480px) {
+    .stat {
+        flex: 100%;
+    }
+    
+    .file-import-row, .url-import-row {
+        flex-direction: column;
+    }
+    
+    .player-controls {
+        flex-direction: column;
+    }
+    
+    .player-controls button {
+        width: 100%;
+    }
+}
+
+/* 原有的其他样式（未修改的部分） */
+.check-time { 
+    font-size: 11px; 
+    color: #666;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 5px;
+    font-family: monospace;
+}
+.check-time.success { background: #e8f5e9; color: #2e7d32; }
+.check-time.failed { background: #ffebee; color: #c62828; }
+.check-time.pending { background: #e3f2fd; color: #1565c0; }
+.right-section { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    flex-shrink: 0;
+}
+.example-links { margin-top: 5px; font-size: 12px; color: #666; }
+.example-link { color: #2c80ff; cursor: pointer; text-decoration: underline; margin: 0 5px; }
+.example-link:hover { color: #1a5bbf; }
+.loading-indicator { display: none; text-align: center; padding: 10px; color: #2c80ff; }
         
-        /* 播放状态 */
-        .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .player-title { font-weight: bold; color: #2c80ff; }
-        .player-status {
-            font-size: 12px;
-            color: #666;
-            background: #f0f0f0;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .player-status.playing { background: #e8f5e9; color: #2e7d32; }
-        .player-status.error { background: #ffebee; color: #c62828; }
-        .player-status.idle { background: #f0f0f0; color: #666; }
-        .player-status.loading { background: #e3f2fd; color: #1565c0; }
+/* 并发状态 */
+.concurrency-status { font-size: 12px; color: #666; margin-top: 5px; text-align: center; }
+.concurrency-value { color: #2c80ff; font-weight: bold; }
         
-        /* 播放控制 */
-        .player-controls { display: flex; gap: 10px; margin-top: 10px; }
-        .player-controls button { padding: 8px 16px; font-size: 14px; border-radius: 6px; min-width: 80px; }
-        .stop-btn { background: #f44336; }
-        .stop-btn:hover { background: #d32f2f; }
+/* 队列状态 */
+.queue-status { background: #f8f9fa; border-radius: 6px; padding: 8px; margin: 10px 0; font-size: 12px; color: #666; }
         
-        /* 并发状态 */
-        .concurrency-status { font-size: 12px; color: #666; margin-top: 5px; text-align: center; }
-        .concurrency-value { color: #2c80ff; font-weight: bold; }
+/* 紧凑布局 */
+.compact-import-container { display: flex; gap: 15px; margin-bottom: 15px; }
+.import-section-compact { flex: 1; background: white; border-radius: 8px; padding: 15px; border: 1px solid #e0e0e0; }
+.import-section-title { font-size: 14px; font-weight: bold; color: #2c80ff; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #e0e0e0; }
+.file-import-row input[type="file"] { flex: 1; padding: 10px; background: white; }
+.file-import-row button { min-width: 100px; white-space: nowrap; }
+.url-import-row button { min-width: 100px; white-space: nowrap; }
         
-        /* 队列状态 */
-        .queue-status { background: #f8f9fa; border-radius: 6px; padding: 8px; margin: 10px 0; font-size: 12px; color: #666; }
-        .queue-item {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            line-height: 24px;
-            text-align: center;
-            border-radius: 50%;
-            margin: 2px;
-            font-size: 11px;
-            background: #e9ecef;
-            color: #6c757d;
-        }
-        .queue-item.active { background: #2c80ff; color: white; }
-        .queue-item.pending { background: #ffc107; color: #212529; }
-        .queue-item.success { background: #28a745; color: white; }
-        .queue-item.failed { background: #dc3545; color: white; }
+/* 分组选择器 */
+.group-dropdown-compact { position: relative; width: 300px; min-width: 250px; }
+.group-dropdown-toggle-compact.expanded .arrow { transform: rotate(180deg); }
+.group-dropdown-menu-compact.show { display: block; }
+.group-dropdown-option-compact:last-child { border-bottom: none; }
+.group-dropdown-option-compact .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+.group-dropdown-option-compact.selected .checkmark { background: white; color: #2c80ff; border-color: #2c80ff; }
+.group-dropdown-option-compact .group-name { flex: 1; font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-dropdown-option-compact .group-count {
+    font-size: 11px;
+    color: #999;
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+.group-dropdown-option-compact.selected .group-count { color: #2c80ff; background: rgba(255,255,255,0.3); }
+.group-dropdown-footer-compact button { padding: 8px 12px; font-size: 12px; min-width: auto; border-radius: 4px; font-weight: bold; }
+.group-dropdown-summary-compact { font-size: 12px; color: #666; margin-top: 8px; text-align: center; }
+.group-dropdown-summary-compact .count { color: #2c80ff; font-weight: bold; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
         
-        /* 紧凑布局 */
-        .compact-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .compact-header h2 { margin: 0; }
-        .compact-import-container { display: flex; gap: 15px; margin-bottom: 15px; }
-        .import-section-compact { flex: 1; background: white; border-radius: 8px; padding: 15px; border: 1px solid #e0e0e0; }
-        .import-section-title { font-size: 14px; font-weight: bold; color: #2c80ff; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #e0e0e0; }
-        .file-import-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .file-import-row input[type="file"] { flex: 1; padding: 10px; background: white; }
-        .file-import-row button { min-width: 100px; white-space: nowrap; }
-        .url-import-row { display: flex; gap: 10px; margin-bottom: 5px; }
-        .url-import-row input { flex: 1; min-width: 0; }
-        .url-import-row button { min-width: 100px; white-space: nowrap; }
+/* 分组选择器禁用状态 */
+.group-dropdown-toggle-compact:disabled,
+.group-dropdown-toggle-compact.disabled { opacity: 0.6; cursor: not-allowed; background: #f5f5f5; }
+.group-dropdown-toggle-compact:disabled:hover,
+.group-dropdown-toggle-compact.disabled:hover { border-color: #ddd; background: #f5f5f5; }
         
-        /* 分组选择器 */
-        .group-dropdown-compact { position: relative; width: 300px; min-width: 250px; }
-        .group-dropdown-toggle-compact {
-            width: 100%;
-            padding: 12px 15px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            color: #333;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s;
-            text-align: left;
-        }
-        .group-dropdown-toggle-compact:hover { border-color: #2c80ff; background: #f8faff; }
-        .group-dropdown-toggle-compact .arrow { font-size: 12px; transition: transform 0.3s; }
-        .group-dropdown-toggle-compact.expanded .arrow { transform: rotate(180deg); }
-        .group-dropdown-menu-compact {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-            z-index: 1000;
-            max-height: 500px; /* 从300px增加到500px，可显示约50个分组 */
-            overflow-y: auto;
-            display: none;
-            margin-top: 5px;
-            animation: fadeIn 0.2s ease-out;
-        }
-        .group-dropdown-menu-compact.show { display: block; }
-        .group-dropdown-option-compact {
-            padding: 8px 15px; /* 从10px 15px改为8px 15px，稍微紧凑一些 */
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .group-dropdown-option-compact:hover { background: #f0f8ff; }
-        .group-dropdown-option-compact.selected { background: #2c80ff; color: white; }
-        .group-dropdown-option-compact:last-child { border-bottom: none; }
-        .group-dropdown-option-compact .checkmark {
-            width: 16px;
-            height: 16px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        .group-dropdown-option-compact.selected .checkmark { background: white; color: #2c80ff; border-color: #2c80ff; }
-        .group-dropdown-option-compact .group-name { flex: 1; font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .group-dropdown-option-compact .group-count {
-            font-size: 11px;
-            color: #999;
-            background: rgba(0,0,0,0.05);
-            padding: 2px 6px;
-            border-radius: 10px;
-        }
-        .group-dropdown-option-compact.selected .group-count { color: #2c80ff; background: rgba(255,255,255,0.3); }
-        .group-dropdown-footer-compact {
-            padding: 10px 15px;
-            border-top: 1px solid #f0f0f0;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-            position: sticky;
-            bottom: 0;
-        }
-        .group-dropdown-footer-compact button { padding: 8px 12px; font-size: 12px; min-width: auto; border-radius: 4px; font-weight: bold; }
-        .group-dropdown-summary-compact { font-size: 12px; color: #666; margin-top: 8px; text-align: center; }
-        .group-dropdown-summary-compact .count { color: #2c80ff; font-weight: bold; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+/* 状态信息 */
+.status-info { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0; }
+.source-count-display-compact { font-size: 14px; color: #2c80ff; font-weight: bold; }
+.selected-groups-info-compact { font-size: 12px; color: #666; }
+.selected-groups-info-compact .count { color: #2c80ff; font-weight: bold; }
         
-        /* 分组选择器禁用状态 */
-        .group-dropdown-toggle-compact:disabled,
-        .group-dropdown-toggle-compact.disabled { opacity: 0.6; cursor: not-allowed; background: #f5f5f5; }
-        .group-dropdown-toggle-compact:disabled:hover,
-        .group-dropdown-toggle-compact.disabled:hover { border-color: #ddd; background: #f5f5f5; }
+/* 分组列表面板 */
+.groups-panel-header .arrow { font-size: 12px; transition: transform 0.3s; }
+.groups-panel-header.expanded .arrow { transform: rotate(180deg); }
+.groups-panel-footer {
+    padding: 10px 15px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+}
+.group-item .group-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+.group-item.selected .group-checkbox { background: white; color: #2c80ff; border-color: white; }
+.group-item .group-name { font-weight: 500; font-size: 14px; }
+.group-item .group-count {
+    font-size: 11px;
+    color: #999;
+    background: rgba(0,0,0,0.05);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+.group-item.selected .group-count { color: #2c80ff; background: rgba(255,255,255,0.3); }
         
-        /* 状态信息 */
-        .status-info { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0; }
-        .source-count-display-compact { font-size: 14px; color: #2c80ff; font-weight: bold; }
-        .selected-groups-info-compact { font-size: 12px; color: #666; }
-        .selected-groups-info-compact .count { color: #2c80ff; font-weight: bold; }
-        
-        /* 分组列表面板 */
-        .groups-panel {
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            margin-top: 15px;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        .groups-panel.expanded { 
-            max-height: 500px; /* 从400px增加到500px，可显示约50个分组 */
-            overflow-y: auto; 
-        }
-        .groups-panel-header {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        .groups-panel-header h3 { margin: 0; font-size: 16px; color: #2c80ff; }
-        .groups-panel-header .arrow { font-size: 12px; transition: transform 0.3s; }
-        .groups-panel-header.expanded .arrow { transform: rotate(180deg); }
-        .groups-panel-content { padding: 15px; }
-        .groups-list { display: flex; flex-wrap: wrap; gap: 10px; }
-        .group-item {
-            background: #f8f9fa;
-            border-radius: 6px;
-            padding: 10px 15px;
-            border: 1px solid #e0e0e0;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .group-item:hover { background: #e9ecef; }
-        .group-item.selected { background: #2c80ff; color: white; border-color: #2c80ff; }
-        .group-item .group-checkbox {
-            width: 16px;
-            height: 16px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        .group-item.selected .group-checkbox { background: white; color: #2c80ff; border-color: white; }
-        .group-item .group-name { font-weight: 500; font-size: 14px; }
-        .group-item .group-count {
-            font-size: 11px;
-            color: #999;
-            background: rgba(0,0,0,0.05);
-            padding: 2px 6px;
-            border-radius: 10px;
-        }
-        .group-item.selected .group-count { color: #2c80ff; background: rgba(255,255,255,0.3); }
-        .groups-panel-footer {
-            padding: 10px 15px;
-            border-top: 1px solid #e0e0e0;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        /* 响应式 */
-        @media (max-width: 768px) {
-            .compact-import-container { flex-direction: column; gap: 10px; }
-            .group-dropdown-compact { width: 100%; }
-            .groups-list { flex-direction: column; }
-            .group-item { width: 100%; }
-        }
+/* 响应式 */
+@media (max-width: 768px) {
+    .compact-import-container { flex-direction: column; gap: 10px; }
+    .group-dropdown-compact { width: 100%; }
+    .groups-list { flex-direction: column; }
+    .group-item { width: 100%; }
+}
     </style>
 </head>
 <body>
@@ -447,36 +1047,38 @@
     <div class="notification" id="notification"></div>
 
 <script>
-const VERSION = "1.4.0";
+// 版本常量
+const VERSION = '1.4.0';
 
-let sources = [];
-let testing = false;
-let paused = false;
-let startTime = 0;
-let completed = 0;
-let valid = [];
-let abortController = null;
-let currentFilter = 'all';
-let delayTime = 100;
-let concurrency = 5;
-let activeTasks = 0;
-let taskQueue = [];
-let nextIndex = 0;
-let startInterval = 500;
-let startTimer = null;
+// 状态管理
+const state = {
+    sources: [],
+    testing: false,
+    paused: false,
+    startTime: 0,
+    completed: 0,
+    valid: [],
+    abortController: null,
+    currentFilter: 'all',
+    delayTime: 100,
+    concurrency: 5,
+    activeTasks: 0,
+    taskQueue: [],
+    nextIndex: 0,
+    startInterval: 500,
+    startTimer: null,
+    groups: [],
+    selectedGroups: new Set(),
+    allGroupsSelected: true,
+    currentPlayingIndex: -1,
+    isPlaying: false,
+    loadTimeout: null,
+    videoListeners: {},
+    originalContent: '',
+    groupInfoMap: new Map()
+};
 
-let groups = [];
-let selectedGroups = new Set();
-let allGroupsSelected = true;
-
-let currentPlayingIndex = -1;
-let isPlaying = false;
-let loadTimeout = null;
-let videoListeners = {};
-
-let originalContent = '';
-let groupInfoMap = new Map();
-
+// DOM 缓存
 const DOM = {
     timeoutSlider: document.getElementById('timeoutSlider'),
     timeoutValue: document.getElementById('timeoutValue'),
@@ -523,1450 +1125,1225 @@ const DOM = {
     exportOnlineBtn: document.getElementById('exportOnline')
 };
 
-function cleanBrackets(text) {
-    if(!text) return text;
-    const bracketRegex = /^[（(【[{](.*?)[）)】]}]$/;
-    const match = text.match(bracketRegex);
-    return match ? match[1].trim() : text.trim();
-}
-
-function getNameFromUrl(url) {
-    try {
-        const urlObj = new URL(url);
-        const domain = urlObj.hostname.replace('www.', '').split('.')[0];
-        return domain.charAt(0).toUpperCase() + domain.slice(1) + '频道';
-    } catch(e) {
-        return '未命名频道';
+// 工具函数
+const utils = {
+    cleanBrackets: (text) => {
+        if (!text) return text;
+        const bracketRegex = /^[（(【[{](.*?)[）)】]}]$/;
+        const match = text.match(bracketRegex);
+        return match ? match[1].trim() : text.trim();
+    },
+    
+    getNameFromUrl: (url) => {
+        try {
+            const urlObj = new URL(url);
+            const domain = urlObj.hostname.replace('www.', '').split('.')[0];
+            return domain.charAt(0).toUpperCase() + domain.slice(1) + '频道';
+        } catch {
+            return '未命名频道';
+        }
+    },
+    
+    isValidUrl: (url) => {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    },
+    
+    showMsg: (text, type = 'success') => {
+        const notif = DOM.notification;
+        notif.textContent = text;
+        notif.style.background = type === 'error' ? '#f44336' : '#4CAF50';
+        notif.style.display = 'block';
+        notif.style.opacity = '1';
+        notif.style.transform = 'translateX(0)';
+        
+        setTimeout(() => {
+            notif.style.opacity = '0';
+            notif.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                notif.style.display = 'none';
+                notif.style.opacity = '1';
+                notif.style.transform = 'translateX(0)';
+            }, 300);
+        }, 2700);
+    },
+    
+    fetchUrlContent: async (url) => {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/plain,application/x-mpegURL,text/html',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return await response.text();
+        } catch (error) {
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                const response = await fetch(proxyUrl);
+                if (response.ok) return await response.text();
+                throw new Error('代理获取失败');
+            } catch {
+                throw new Error('无法获取内容: ' + error.message);
+            }
+        }
     }
-}
+};
 
-function parseContent(content) {
-    sources = [];
-    originalContent = content;
-    const lines = content.split('\n');
-    const sourceMap = new Map();
-    
-    groupInfoMap.clear();
-    
-    let currentExtInf = null;
-    let currentName = '';
-    let currentGroup = '';
-    let currentLine = '';
-    let simpleCurrentGroup = '默认分组';
-    let currentGroupInfo = {
-        name: simpleCurrentGroup,
-        type: 'genre',
-        originalLine: ''
-    };
-    
-    for(let i = 0; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if(!line) continue;
+// 解析逻辑
+const parser = {
+    parseContent: (content) => {
+        state.sources = [];
+        state.originalContent = content;
+        const lines = content.split('\n');
+        const sourceMap = new Map();
         
-        const lineIndex = i;
+        state.groupInfoMap.clear();
         
-        if(line === '#EXTM3U') continue;
+        let currentExtInf = null;
+        let currentName = '';
+        let currentGroup = '';
+        let simpleCurrentGroup = '默认分组';
+        let currentGroupInfo = { name: simpleCurrentGroup, type: 'genre', originalLine: '' };
         
-        if(line.startsWith('#EXTINF:')) {
-            currentExtInf = line;
-            currentLine = line;
-            currentName = '';
-            currentGroup = '';
-            
-            const groupMatch = line.match(/group-title="([^"]*)"/);
-            if(groupMatch && groupMatch[1]) {
-                currentGroup = groupMatch[1].trim();
-                currentGroupInfo = {
-                    name: currentGroup,
-                    type: 'grouptitle',
-                    originalLine: ''
+        const createSource = (finalUrl, finalName, finalGroup, finalExtInf, lineIndex, originalLineContent) => {
+            const key = `${finalUrl}_${finalName}`;
+            if (!sourceMap.has(key)) {
+                const source = {
+                    id: Date.now() + Math.random(),
+                    name: finalName || utils.getNameFromUrl(finalUrl),
+                    url: finalUrl,
+                    status: 'pending',
+                    testing: false,
+                    checkTime: null,
+                    startTime: null,
+                    group: finalGroup,
+                    extinf: finalExtInf,
+                    originalLine: lineIndex,
+                    originalContent: originalLineContent,
+                    groupType: currentGroupInfo.type
                 };
+                state.sources.push(source);
+                sourceMap.set(key, source);
+            }
+        };
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            if (line === '#EXTM3U') continue;
+            
+            if (line.startsWith('#EXTINF:')) {
+                currentExtInf = line;
+                currentName = '';
+                currentGroup = '';
                 
-                if (!groupInfoMap.has(currentGroup)) {
-                    groupInfoMap.set(currentGroup, currentGroupInfo);
+                const groupMatch = line.match(/group-title="([^"]*)"/);
+                if (groupMatch?.[1]) {
+                    currentGroup = groupMatch[1].trim();
+                    currentGroupInfo = { name: currentGroup, type: 'grouptitle', originalLine: '' };
+                    if (!state.groupInfoMap.has(currentGroup)) {
+                        state.groupInfoMap.set(currentGroup, currentGroupInfo);
+                    }
                 }
-            } else {
-                currentGroup = simpleCurrentGroup;
-            }
-            
-            const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
-            if(tvgNameMatch && tvgNameMatch[1]) {
-                currentName = tvgNameMatch[1].trim();
-            } else {
-                const lastCommaIndex = line.lastIndexOf(',');
-                if(lastCommaIndex !== -1) {
-                    currentName = line.substring(lastCommaIndex + 1).trim();
+                
+                const tvgNameMatch = line.match(/tvg-name="([^"]*)"/);
+                if (tvgNameMatch?.[1]) {
+                    currentName = tvgNameMatch[1].trim();
                 } else {
-                    currentName = '未命名频道';
+                    const lastCommaIndex = line.lastIndexOf(',');
+                    currentName = lastCommaIndex !== -1 ? line.substring(lastCommaIndex + 1).trim() : '未命名频道';
                 }
+                
+                currentName = utils.cleanBrackets(currentName);
+                continue;
             }
             
-            currentName = cleanBrackets(currentName);
-            continue;
+            if (line.includes('#genre#')) {
+                const commaIndex = line.indexOf(',');
+                simpleCurrentGroup = commaIndex !== -1 ? line.substring(0, commaIndex).trim() : '未命名分组';
+                if (!simpleCurrentGroup) simpleCurrentGroup = '未命名分组';
+                
+                currentGroupInfo = { name: simpleCurrentGroup, type: 'genre', originalLine: line };
+                if (!state.groupInfoMap.has(simpleCurrentGroup)) {
+                    state.groupInfoMap.set(simpleCurrentGroup, currentGroupInfo);
+                }
+                continue;
+            }
+            
+            const isStreamUrl = line.includes('://') || line.includes('.m3u8') || line.includes('.ts') || 
+                               line.startsWith('udp://') || line.startsWith('rtp://');
+            
+            if (isStreamUrl) {
+                let finalUrl = line;
+                let finalName = currentName || '未命名频道';
+                let finalGroup = currentGroup || simpleCurrentGroup || '默认分组';
+                let originalLineContent = line;
+                
+                if (currentExtInf) {
+                    originalLineContent = `${currentExtInf}\n${line}`;
+                } else {
+                    const commaIndex = line.indexOf(',');
+                    if (commaIndex !== -1) {
+                        const namePart = line.substring(0, commaIndex).trim();
+                        finalUrl = line.substring(commaIndex + 1).trim();
+                        
+                        if (finalUrl?.match(/^(http|https|rtp|rtsp|udp):\/\//) || finalUrl.includes('.m3u8') || finalUrl.includes('.ts')) {
+                            finalName = utils.cleanBrackets(namePart) || finalName;
+                        } else {
+                            continue;
+                        }
+                    }
+                }
+                
+                if (finalUrl?.match(/^(http|https|rtp|rtsp|udp):\/\//) || finalUrl.includes('.m3u8') || finalUrl.includes('.ts')) {
+                    createSource(finalUrl, finalName, finalGroup, currentExtInf, i, originalLineContent);
+                    currentExtInf = null;
+                    currentName = '';
+                    currentGroup = '';
+                }
+                continue;
+            }
+            
+            if (!line.startsWith('#')) {
+                currentName = utils.cleanBrackets(line);
+            }
         }
         
-        if(line.includes('#genre#')) {
-            const commaIndex = line.indexOf(',');
-            if(commaIndex !== -1) {
-                simpleCurrentGroup = line.substring(0, commaIndex).trim();
-                if(simpleCurrentGroup === '') {
-                    simpleCurrentGroup = '未命名分组';
-                }
+        DOM.sourceCount.textContent = state.sources.length + '个频道';
+        ui.updateGroups();
+        ui.updateStats();
+        ui.updateExportButton();
+    }
+};
+
+// UI 更新函数
+const ui = {
+    updateGroups: () => {
+        const groupMap = new Map();
+        state.sources.forEach(source => {
+            const groupName = source.group || '未分组';
+            if (!groupMap.has(groupName)) {
+                groupMap.set(groupName, { name: groupName, count: 0, selected: true });
+            }
+            groupMap.get(groupName).count++;
+        });
+        
+        state.groups = Array.from(groupMap.values())
+            .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+        
+        ui.refreshGroupDropdown();
+        ui.refreshGroupsPanel();
+        ui.updateSelectedGroupsInfo();
+    },
+    
+    refreshGroupDropdown: () => {
+        const dropdownMenu = DOM.groupDropdownMenu;
+        const dropdownText = DOM.groupDropdownText;
+        const summary = DOM.groupDropdownSummary;
+        const groupSection = DOM.groupImportSection;
+        
+        if (!state.groups.length) {
+            groupSection.style.display = 'none';
+            DOM.groupCountHint.textContent = '导入直播源后显示分组选择';
+            return;
+        }
+        
+        groupSection.style.display = 'block';
+        dropdownMenu.innerHTML = '';
+        
+        state.groups.forEach(group => {
+            const option = document.createElement('div');
+            option.className = `group-dropdown-option-compact${group.selected ? ' selected' : ''}`;
+            option.innerHTML = `
+                <span class="checkmark">${group.selected ? '✓' : ''}</span>
+                <span class="group-name" title="${group.name}">${group.name}</span>
+                <span class="group-count">${group.count}</span>
+            `;
+            option.dataset.group = group.name;
+            option.addEventListener('click', (e) => handlers.handleGroupToggle(e, group.name));
+            dropdownMenu.appendChild(option);
+        });
+        
+        const footer = document.createElement('div');
+        footer.className = 'group-dropdown-footer-compact';
+        footer.innerHTML = `
+            <button class="clear-all-btn" style="background: #f44336; color: white;">全不选</button>
+            <button class="select-all-btn" style="background: #4CAF50; color: white;">全选</button>
+        `;
+        footer.querySelector('.select-all-btn').addEventListener('click', (e) => handlers.handleSelectAllGroups(e));
+        footer.querySelector('.clear-all-btn').addEventListener('click', (e) => handlers.handleClearAllGroups(e));
+        dropdownMenu.appendChild(footer);
+        
+        const selectedCount = state.groups.filter(g => g.selected).length;
+        dropdownText.textContent = !selectedCount ? '选择检测分组...' : 
+                                   selectedCount === state.groups.length ? '所有分组' : 
+                                   selectedCount === 1 ? state.groups.find(g => g.selected)?.name : 
+                                   `${selectedCount}个分组`;
+        
+        ui.updateSelectedGroupsInfo();
+        
+        if (state.groups.length) {
+            DOM.groupCountHint.textContent = `共${state.groups.length}个分组，按住Ctrl可多选`;
+        }
+    },
+    
+    refreshGroupsPanel: () => {
+        const panelContent = DOM.groupsPanelContent;
+        if (!state.groups.length) {
+            panelContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">暂无分组，请先导入直播源</div>';
+            return;
+        }
+        
+        const groupsList = document.createElement('div');
+        groupsList.className = 'groups-list';
+        
+        state.groups.forEach(group => {
+            const groupItem = document.createElement('div');
+            groupItem.className = `group-item${group.selected ? ' selected' : ''}`;
+            groupItem.innerHTML = `
+                <span class="group-checkbox">${group.selected ? '✓' : ''}</span>
+                <span class="group-name" title="${group.name}">${group.name}</span>
+                <span class="group-count">${group.count}</span>
+            `;
+            groupItem.addEventListener('click', (e) => handlers.handleGroupToggle(e, group.name));
+            groupsList.appendChild(groupItem);
+        });
+        
+        panelContent.innerHTML = '';
+        panelContent.appendChild(groupsList);
+    },
+    
+    updateSelectedGroupsInfo: () => {
+        const selectedGroupsCount = state.groups.filter(g => g.selected).length;
+        const selectedSourcesCount = state.getSelectedSourcesCount();
+        DOM.selectedGroupsInfo.innerHTML = `
+            已选择 <span class="count">${selectedGroupsCount}</span> 个分组，共 <span class="count">${selectedSourcesCount}</span> 个频道
+        `;
+        DOM.groupDropdownSummary.innerHTML = DOM.selectedGroupsInfo.innerHTML;
+    },
+    
+    updateStats: () => {
+        const selectedSources = state.getSelectedSources();
+        const totalSelected = selectedSources.length;
+        const successCount = selectedSources.filter(s => s.status === 'success').length;
+        const failedCount = selectedSources.filter(s => s.status === 'failed').length;
+        const pendingCount = totalSelected - successCount - failedCount;
+        
+        DOM.total.textContent = totalSelected;
+        DOM.success.textContent = successCount;
+        DOM.failed.textContent = failedCount;
+        DOM.pending.textContent = pendingCount;
+        ui.updateExportButton();
+    },
+    
+    updateProgress: () => {
+        const selectedSourcesCount = state.getSelectedSources().length;
+        const percent = selectedSourcesCount ? Math.round((state.completed / selectedSourcesCount) * 100) : 0;
+        DOM.progressBar.style.width = percent + '%';
+        DOM.progressText.textContent = `检测进度: ${state.completed}/${selectedSourcesCount} (${percent}%)`;
+    },
+    
+    updateConcurrencyStatus: () => {
+        DOM.activeTasks.textContent = state.activeTasks;
+        DOM.queueSize.textContent = state.taskQueue.length;
+        DOM.queueStatus.style.display = (state.taskQueue.length || state.activeTasks) ? 'block' : 'none';
+    },
+    
+    updateQueueDisplay: () => {
+        const queueDisplay = DOM.queueDisplay;
+        const selectedSources = state.getSelectedSources();
+        queueDisplay.innerHTML = '';
+        
+        for (let i = 0; i < Math.min(10, selectedSources.length); i++) {
+            const source = selectedSources[i];
+            const div = document.createElement('span');
+            div.className = 'queue-item';
+            
+            if (i < state.nextIndex) {
+                div.className = `queue-item ${source.status === 'success' ? 'success' : 
+                                  source.status === 'failed' ? 'failed' : 
+                                  source.testing ? 'active' : 'pending'}`;
+                div.textContent = source.status === 'success' ? '✓' : source.status === 'failed' ? '✗' : i + 1;
             } else {
-                const genreIndex = line.indexOf('#genre#');
-                if(genreIndex !== -1) {
-                    simpleCurrentGroup = line.substring(0, genreIndex).trim();
-                    if(simpleCurrentGroup === '') {
-                        simpleCurrentGroup = '未命名分组';
-                    }
-                } else {
-                    simpleCurrentGroup = '默认分组';
-                }
+                div.textContent = i + 1;
             }
             
-            currentGroupInfo = {
-                name: simpleCurrentGroup,
-                type: 'genre',
-                originalLine: line
+            div.title = `第${i + 1}个: ${source.name} (分组: ${source.group})`;
+            queueDisplay.appendChild(div);
+        }
+        
+        if (selectedSources.length > 10) {
+            const more = document.createElement('span');
+            more.className = 'queue-item';
+            more.textContent = '...';
+            more.title = `还有${selectedSources.length - 10}个`;
+            queueDisplay.appendChild(more);
+        }
+    },
+    
+    updateExportButton: () => {
+        DOM.exportOnlineBtn.disabled = !state.sources.some(s => s.status === 'success');
+    },
+    
+    updateSourceList: () => {
+        const container = DOM.sourceList;
+        const selectedSources = state.getSelectedSources();
+        let filteredSources = selectedSources;
+        
+        if (state.currentFilter === 'online') {
+            filteredSources = selectedSources.filter(s => s.status === 'success');
+        } else if (state.currentFilter === 'offline') {
+            filteredSources = selectedSources.filter(s => s.status === 'failed');
+        }
+        
+        if (!filteredSources.length) {
+            const messages = {
+                all: '暂无直播源',
+                online: '暂无在线源',
+                offline: '暂无离线源'
+            };
+            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;">${messages[state.currentFilter]}</div>`;
+            return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+        filteredSources.forEach(source => {
+            const originalIndex = state.sources.indexOf(source);
+            const item = document.createElement('div');
+            item.className = 'source-item';
+            item.setAttribute('data-index', originalIndex);
+            
+            if (originalIndex === state.currentPlayingIndex) {
+                item.style.cssText = 'background: #f0f8ff; border-left: 4px solid #2c80ff;';
+            }
+            
+            const statusConfig = {
+                pending: { color: '#ccc', text: '待检测', timeClass: 'pending' },
+                success: { color: '#4CAF50', text: '有效', timeClass: 'success' },
+                failed: { color: '#f44336', text: '无效', timeClass: 'failed' }
             };
             
-            if (!groupInfoMap.has(simpleCurrentGroup)) {
-                groupInfoMap.set(simpleCurrentGroup, currentGroupInfo);
+            const config = statusConfig[source.status] || statusConfig.pending;
+            if (source.testing) {
+                config.color = '#2c80ff';
+                config.text = '检测中';
             }
-            continue;
+            
+            const timeDisplay = source.checkTime !== null ? source.checkTime.toFixed(2) + 's' : 
+                              source.testing ? '检测中...' : '--';
+            
+            const groupInfo = source.group && source.group !== '未分组' ? 
+                `<div style="font-size: 10px; color: #888; margin-top: 2px;">分组: ${source.group}</div>` : '';
+            
+            item.innerHTML = `
+                <div style="width: 20px; height: 20px; border-radius: 50%; background: ${config.color}; margin-right: 10px; flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="channel-name" title="${source.name}">${source.name}</div>
+                    <div class="channel-url" title="${source.url}">${source.url}</div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="check-time ${config.timeClass}">检测: ${timeDisplay}</span>
+                    </div>
+                    ${groupInfo}
+                </div>
+                <div class="right-section">
+                    <button class="play-btn" style="padding: 8px 12px; font-size: 14px; min-width: 60px;" data-index="${originalIndex}">播放</button>
+                    <div style="padding: 8px 12px; color: #666; font-size: 12px; white-space: nowrap;">${config.text}</div>
+                </div>
+            `;
+            fragment.appendChild(item);
+        });
+        
+        container.innerHTML = '';
+        container.appendChild(fragment);
+    }
+};
+
+// 状态查询函数
+state.getSelectedSourcesCount = () => 
+    state.allGroupsSelected || !state.selectedGroups.size ? state.sources.length : 
+    state.sources.filter(s => state.selectedGroups.has(s.group || '未分组')).length;
+
+state.getSelectedSources = () => 
+    state.allGroupsSelected || !state.selectedGroups.size ? state.sources : 
+    state.sources.filter(s => state.selectedGroups.has(s.group || '未分组'));
+
+// 事件处理
+const handlers = {
+    handleGroupToggle: (e, groupName) => {
+        e.stopPropagation();
+        if (state.testing) {
+            utils.showMsg('检测进行中，无法修改分组选择', 'error');
+            return;
         }
         
-        if(line.includes('://') || line.includes('.m3u8') || line.includes('.ts') || line.startsWith('udp://') || line.startsWith('rtp://')) {
-            let finalUrl = line;
-            let finalName = currentName || '未命名频道';
-            let finalGroup = currentGroup || simpleCurrentGroup || '默认分组';
-            let finalExtInf = currentExtInf || '';
-            let originalLineContent = line;
-            
-            if(currentExtInf) {
-                originalLineContent = `${currentExtInf}\n${line}`;
+        const group = state.groups.find(g => g.name === groupName);
+        if (group) {
+            group.selected = !group.selected;
+            group.selected ? state.selectedGroups.add(groupName) : state.selectedGroups.delete(groupName);
+            state.allGroupsSelected = state.groups.length > 0 && state.groups.every(g => g.selected);
+            ui.refreshGroupDropdown();
+            ui.refreshGroupsPanel();
+            ui.updateSourceList();
+            ui.updateStats();
+        }
+    },
+    
+    handleSelectAllGroups: (e) => {
+        e?.stopPropagation();
+        if (state.testing) {
+            utils.showMsg('检测进行中，无法修改分组选择', 'error');
+            return;
+        }
+        
+        state.groups.forEach(group => {
+            group.selected = true;
+            state.selectedGroups.add(group.name);
+        });
+        state.allGroupsSelected = true;
+        ui.refreshGroupDropdown();
+        ui.refreshGroupsPanel();
+        ui.updateSourceList();
+        ui.updateStats();
+        utils.showMsg('已选择所有分组');
+    },
+    
+    handleClearAllGroups: (e) => {
+        e?.stopPropagation();
+        if (state.testing) {
+            utils.showMsg('检测进行中，无法修改分组选择', 'error');
+            return;
+        }
+        
+        state.groups.forEach(group => group.selected = false);
+        state.selectedGroups.clear();
+        state.allGroupsSelected = false;
+        ui.refreshGroupDropdown();
+        ui.refreshGroupsPanel();
+        ui.updateSourceList();
+        ui.updateStats();
+        utils.showMsg('已清除所有分组选择');
+    },
+    
+    handleFileImport: () => DOM.fileInput.click(),
+    
+    handleFileChange: (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            parser.parseContent(e.target.result);
+            ui.updateSourceList();
+            utils.showMsg(`已导入${state.sources.length}个频道`);
+        };
+        reader.readAsText(file);
+    },
+    
+    handleUrlImport: async () => {
+        const url = DOM.urlInput.value.trim();
+        
+        if (!url) {
+            utils.showMsg('请输入URL地址', 'error');
+            return;
+        }
+        
+        if (!utils.isValidUrl(url)) {
+            utils.showMsg('请输入有效的URL地址', 'error');
+            return;
+        }
+        
+        const btn = DOM.urlImportBtn;
+        const loadingIndicator = DOM.loadingIndicator;
+        const originalText = btn.textContent;
+        
+        btn.textContent = '导入中...';
+        btn.disabled = true;
+        loadingIndicator.style.display = 'block';
+        
+        try {
+            const content = await utils.fetchUrlContent(url);
+            if (content) {
+                parser.parseContent(content);
+                ui.updateSourceList();
+                utils.showMsg(`已从URL导入${state.sources.length}个频道`);
             } else {
-                const commaIndex = line.indexOf(',');
-                if(commaIndex !== -1) {
-                    const namePart = line.substring(0, commaIndex).trim();
-                    finalUrl = line.substring(commaIndex + 1).trim();
-                    
-                    if(finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://') || 
-                       finalUrl.startsWith('rtp://') || finalUrl.startsWith('rtsp://') || 
-                       finalUrl.startsWith('udp://') || finalUrl.includes('.m3u8') || 
-                       finalUrl.includes('.ts'))) {
-                        finalName = cleanBrackets(namePart) || finalName;
-                    } else {
-                        continue;
-                    }
-                }
+                utils.showMsg('无法获取内容，请检查URL或网络', 'error');
             }
-            
-            if(finalUrl && (finalUrl.startsWith('http://') || finalUrl.startsWith('https://') || 
-               finalUrl.startsWith('rtp://') || finalUrl.startsWith('rtsp://') || 
-               finalUrl.startsWith('udp://') || finalUrl.includes('.m3u8') || 
-               finalUrl.includes('.ts'))) {
-                if (!sourceMap.has(finalUrl)) {
-                    const source = {
-                        id: Date.now() + Math.random(),
-                        name: finalName || getNameFromUrl(finalUrl),
-                        url: finalUrl,
-                        status: 'pending',
-                        testing: false,
-                        checkTime: null,
-                        startTime: null,
-                        group: finalGroup,
-                        extinf: finalExtInf,
-                        originalLine: lineIndex,
-                        originalContent: originalLineContent,
-                        groupType: currentGroupInfo.type
-                    };
-                    
-                    sources.push(source);
-                    sourceMap.set(finalUrl, source);
-                }
-            }
-            
-            currentExtInf = null;
-            currentName = '';
-            currentGroup = '';
-            currentLine = '';
-            continue;
+        } catch (error) {
+            utils.showMsg('导入失败: ' + (error.message || '请检查网络连接'), 'error');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+            loadingIndicator.style.display = 'none';
         }
+    },
+    
+    handleFilter: (e) => {
+        const target = e.target;
+        if (!target.classList.contains('filter-btn')) return;
         
-        if(!line.startsWith('#') && !line.includes('://') && !line.includes('.m3u8') && !line.includes('.ts')) {
-            currentName = cleanBrackets(line);
-        }
-    }
-    
-    DOM.sourceCount.textContent = sources.length + '个频道';
-    extractAndUpdateGroups();
-    updateStats();
-    updateExportButton();
-}
-
-function extractAndUpdateGroups() {
-    const groupMap = new Map();
-    
-    sources.forEach(source => {
-        const groupName = source.group || '未分组';
-        if (!groupMap.has(groupName)) {
-            groupMap.set(groupName, {
-                name: groupName,
-                count: 1,
-                selected: true
-            });
-        } else {
-            groupMap.get(groupName).count++;
-        }
-    });
-    
-    groups = Array.from(groupMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-    updateGroupDropdown();
-    updateGroupsPanel();
-    updateSelectedGroups();
-}
-
-function updateGroupDropdown() {
-    const dropdownMenu = DOM.groupDropdownMenu;
-    const dropdownText = DOM.groupDropdownText;
-    const summary = DOM.groupDropdownSummary;
-    const groupSection = DOM.groupImportSection;
-    
-    if (groups.length === 0) {
-        groupSection.style.display = 'none';
-        DOM.groupCountHint.textContent = '导入直播源后显示分组选择';
-        return;
-    }
-    
-    groupSection.style.display = 'block';
-    dropdownMenu.innerHTML = '';
-    
-    groups.forEach(group => {
-        const option = document.createElement('div');
-        option.className = 'group-dropdown-option-compact';
-        if (group.selected) option.classList.add('selected');
-        option.innerHTML = `
-            <span class="checkmark">${group.selected ? '✓' : ''}</span>
-            <span class="group-name" title="${group.name}">${group.name}</span>
-            <span class="group-count">${group.count}</span>
-        `;
-        option.dataset.group = group.name;
-        
-        option.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (testing) {
-                showMsg('检测进行中，无法修改分组选择', 'error');
-                return;
-            }
-            toggleGroupSelection(group.name);
-            updateGroupDropdown();
-            updateGroupsPanel();
-            updateSourceList();
-            updateStats();
-        });
-        
-        dropdownMenu.appendChild(option);
-    });
-    
-    const footer = document.createElement('div');
-    footer.className = 'group-dropdown-footer-compact';
-    footer.innerHTML = `
-        <button class="clear-all-btn" style="background: #f44336; color: white;">全不选</button>
-        <button class="select-all-btn" style="background: #4CAF50; color: white;">全选</button>
-    `;
-    
-    footer.querySelector('.select-all-btn').addEventListener('click', function(e) {
-        e.stopPropagation();
-        if (testing) {
-            showMsg('检测进行中，无法修改分组选择', 'error');
-            return;
-        }
-        selectAllGroups();
-        updateGroupDropdown();
-        updateGroupsPanel();
-        updateSourceList();
-        updateStats();
-    });
-    
-    footer.querySelector('.clear-all-btn').addEventListener('click', function(e) {
-        e.stopPropagation();
-        if (testing) {
-            showMsg('检测进行中，无法修改分组选择', 'error');
-            return;
-        }
-        clearAllGroups();
-        updateGroupDropdown();
-        updateGroupsPanel();
-        updateSourceList();
-        updateStats();
-    });
-    
-    dropdownMenu.appendChild(footer);
-    
-    const selectedCount = groups.filter(g => g.selected).length;
-    if (selectedCount === 0) {
-        dropdownText.textContent = '选择检测分组...';
-    } else if (selectedCount === groups.length) {
-        dropdownText.textContent = '所有分组';
-    } else if (selectedCount === 1) {
-        const selectedGroup = groups.find(g => g.selected);
-        dropdownText.textContent = selectedGroup ? selectedGroup.name : '1个分组';
-    } else {
-        dropdownText.textContent = `${selectedCount}个分组`;
-    }
-    
-    const selectedGroupsCount = groups.filter(g => g.selected).length;
-    const selectedSourcesCount = getSelectedSourcesCount();
-    summary.innerHTML = `
-        已选择 <span class="count">${selectedGroupsCount}</span> 个分组，共 <span class="count">${selectedSourcesCount}</span> 个频道
-    `;
-    
-    updateSelectedGroupsInfo();
-    
-    if (groups.length > 0) {
-        DOM.groupCountHint.textContent = `共${groups.length}个分组，按住Ctrl可多选`;
-    }
-}
-
-function updateGroupsPanel() {
-    const panelContent = DOM.groupsPanelContent;
-    
-    if (groups.length === 0) {
-        panelContent.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">暂无分组，请先导入直播源</div>';
-        return;
-    }
-    
-    const groupsList = document.createElement('div');
-    groupsList.className = 'groups-list';
-    
-    groups.forEach(group => {
-        const groupItem = document.createElement('div');
-        groupItem.className = 'group-item';
-        if (group.selected) groupItem.classList.add('selected');
-        groupItem.innerHTML = `
-            <span class="group-checkbox">${group.selected ? '✓' : ''}</span>
-            <span class="group-name" title="${group.name}">${group.name}</span>
-            <span class="group-count">${group.count}</span>
-        `;
-        
-        groupItem.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (testing) {
-                showMsg('检测进行中，无法修改分组选择', 'error');
-                return;
-            }
-            toggleGroupSelection(group.name);
-            updateGroupDropdown();
-            updateGroupsPanel();
-            updateSourceList();
-            updateStats();
-        });
-        
-        groupsList.appendChild(groupItem);
-    });
-    
-    panelContent.innerHTML = '';
-    panelContent.appendChild(groupsList);
-}
-
-function toggleGroupSelection(groupName) {
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    
-    const group = groups.find(g => g.name === groupName);
-    if (group) {
-        group.selected = !group.selected;
-        if (group.selected) {
-            selectedGroups.add(groupName);
-        } else {
-            selectedGroups.delete(groupName);
-        }
-        updateAllGroupsSelected();
-    }
-}
-
-function selectAllGroups() {
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    
-    groups.forEach(group => {
-        group.selected = true;
-        selectedGroups.add(group.name);
-    });
-    
-    allGroupsSelected = true;
-    updateGroupDropdown();
-    updateGroupsPanel();
-    updateSourceList();
-    updateStats();
-    showMsg('已选择所有分组');
-}
-
-function clearAllGroups() {
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    
-    groups.forEach(group => {
-        group.selected = false;
-    });
-    
-    selectedGroups.clear();
-    allGroupsSelected = false;
-    updateGroupDropdown();
-    updateGroupsPanel();
-    updateSourceList();
-    updateStats();
-    showMsg('已清除所有分组选择');
-}
-
-function updateAllGroupsSelected() {
-    allGroupsSelected = groups.length > 0 && groups.every(group => group.selected);
-}
-
-function updateSelectedGroups() {
-    selectedGroups.clear();
-    groups.forEach(group => {
-        if (group.selected) selectedGroups.add(group.name);
-    });
-    allGroupsSelected = groups.length > 0 && groups.every(group => group.selected);
-}
-
-function updateSelectedGroupsInfo() {
-    const selectedGroupsCount = groups.filter(g => g.selected).length;
-    const selectedSourcesCount = getSelectedSourcesCount();
-    DOM.selectedGroupsInfo.innerHTML = `
-        已选择 <span class="count">${selectedGroupsCount}</span> 个分组，共 <span class="count">${selectedSourcesCount}</span> 个频道
-    `;
-}
-
-function getSelectedSourcesCount() {
-    if (allGroupsSelected || selectedGroups.size === 0) return sources.length;
-    return sources.filter(source => selectedGroups.has(source.group || '未分组')).length;
-}
-
-function getSelectedSources() {
-    if (allGroupsSelected || selectedGroups.size === 0) return sources;
-    return sources.filter(source => selectedGroups.has(source.group || '未分组'));
-}
-
-DOM.fileImportBtn.addEventListener('click', function() {
-    DOM.fileInput.click();
-});
-
-DOM.fileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        parseContent(e.target.result);
-        updateSourceList();
-        showMsg(`已导入${sources.length}个频道`);
-    };
-    reader.readAsText(file);
-});
-
-DOM.urlImportBtn.addEventListener('click', async function() {
-    const url = DOM.urlInput.value.trim();
-    
-    if (!url) {
-        showMsg('请输入URL地址', 'error');
-        return;
-    }
-    
-    if (!isValidUrl(url)) {
-        showMsg('请输入有效的URL地址', 'error');
-        return;
-    }
-    
-    const btn = this;
-    const loadingIndicator = DOM.loadingIndicator;
-    const originalText = btn.textContent;
-    
-    btn.textContent = '导入中...';
-    btn.disabled = true;
-    loadingIndicator.style.display = 'block';
-    
-    try {
-        const content = await fetchUrlContent(url);
-        if (content) {
-            parseContent(content);
-            updateSourceList();
-            showMsg(`已从URL导入${sources.length}个频道`);
-        } else {
-            showMsg('无法获取内容，请检查URL或网络', 'error');
-        }
-    } catch (error) {
-        console.error('导入失败:', error);
-        showMsg('导入失败: ' + (error.message || '请检查网络连接'), 'error');
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-        loadingIndicator.style.display = 'none';
-    }
-});
-
-document.querySelector('.filter-buttons').addEventListener('click', function(e) {
-    const target = e.target;
-    if (target.classList.contains('filter-btn')) {
-        const filterType = target.getAttribute('data-filter');
-        currentFilter = filterType;
-        
+        state.currentFilter = target.dataset.filter;
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         target.classList.add('active');
-        updateSourceList();
-    }
-});
-
-function updateSourceList() {
-    const container = DOM.sourceList;
-    let currentSources = getSelectedSources();
-    let filteredSources = currentSources;
+        ui.updateSourceList();
+    },
     
-    if (currentFilter === 'online') {
-        filteredSources = currentSources.filter(source => source.status === 'success');
-    } else if (currentFilter === 'offline') {
-        filteredSources = currentSources.filter(source => source.status === 'failed');
-    }
-    
-    if(filteredSources.length === 0) {
-        let message = '暂无直播源';
-        if (currentFilter === 'online') message = '暂无在线源';
-        if (currentFilter === 'offline') message = '暂无离线源';
-        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;">${message}</div>`;
-        return;
-    }
-    
-    const fragment = document.createDocumentFragment();
-    
-    filteredSources.forEach((source, index) => {
-        const originalIndex = sources.indexOf(source);
-        const item = document.createElement('div');
-        item.className = 'source-item';
-        item.setAttribute('data-index', originalIndex);
+    handleSliderChange: (e) => {
+        const target = e.target;
+        const value = target.value;
         
-        if (originalIndex === currentPlayingIndex) {
-            item.style.background = '#f0f8ff';
-            item.style.borderLeft = '4px solid #2c80ff';
+        switch (target.id) {
+            case 'timeoutSlider':
+                DOM.timeoutValue.textContent = value;
+                break;
+            case 'delaySlider':
+                DOM.delayValue.textContent = value;
+                state.delayTime = parseInt(value);
+                break;
+            case 'concurrencySlider':
+                DOM.concurrencyValue.textContent = value;
+                DOM.currentConcurrency.textContent = value;
+                state.concurrency = parseInt(value);
+                break;
         }
-        
-        let statusColor = '#ccc';
-        let statusText = '待检测';
-        let timeClass = 'pending';
-        
-        if(source.status === 'success') {
-            statusColor = '#4CAF50';
-            statusText = '有效';
-            timeClass = 'success';
-        } else if(source.status === 'failed') {
-            statusColor = '#f44336';
-            statusText = '无效';
-            timeClass = 'failed';
-        } else if(source.testing) {
-            statusColor = '#2c80ff';
-            statusText = '检测中';
-        }
-        
-        let timeDisplay = '--';
-        if(source.checkTime !== null) {
-            timeDisplay = source.checkTime.toFixed(2) + 's';
-        } else if(source.testing) {
-            timeDisplay = '检测中...';
-        }
-        
-        const groupInfo = source.group && source.group !== '未分组' ? 
-            `<div style="font-size: 10px; color: #888; margin-top: 2px;">分组: ${source.group}</div>` : '';
-        
-        item.innerHTML = `
-            <div style="width: 20px; height: 20px; border-radius: 50%; background: ${statusColor}; 
-                 margin-right: 10px; flex-shrink: 0;"></div>
-            <div style="flex: 1; min-width: 0;">
-                <div class="channel-name" title="${source.name}">${source.name}</div>
-                <div class="channel-url" title="${source.url}">${source.url}</div>
-                <div style="display: flex; align-items: center;">
-                    <span class="check-time ${timeClass}">检测: ${timeDisplay}</span>
-                </div>
-                ${groupInfo}
-            </div>
-            <div class="right-section">
-                <button class="play-btn" style="padding: 8px 12px; font-size: 14px; min-width: 60px;" data-index="${originalIndex}">播放</button>
-                <div style="padding: 8px 12px; color: #666; font-size: 12px; white-space: nowrap;">${statusText}</div>
-            </div>
-        `;
-        fragment.appendChild(item);
-    });
+    },
     
-    container.innerHTML = '';
-    container.appendChild(fragment);
-}
-
-function cleanupVideoListeners() {
-    const videoPlayer = DOM.videoPlayer;
-    Object.keys(videoListeners).forEach(eventName => {
-        if (videoListeners[eventName]) videoPlayer.removeEventListener(eventName, videoListeners[eventName]);
-    });
-    videoListeners = {};
-}
-
-function resetPlayerState() {
-    const videoPlayer = DOM.videoPlayer;
-    videoPlayer.pause();
-    videoPlayer.currentTime = 0;
-    videoPlayer.src = '';
-    videoPlayer.load();
-    
-    isPlaying = false;
-    DOM.playerStatus.textContent = '未播放';
-    DOM.playerStatus.className = 'player-status idle';
-    DOM.currentPlaying.textContent = '未选择频道';
-    DOM.currentPlaying.style.color = '#666';
-    DOM.stopBtn.disabled = true;
-    
-    if (loadTimeout) {
-        clearTimeout(loadTimeout);
-        loadTimeout = null;
-    }
-}
-
-function stopPlayback() {
-    cleanupVideoListeners();
-    resetPlayerState();
-    
-    if (currentPlayingIndex !== -1) {
-        updateSourceList();
-        currentPlayingIndex = -1;
-    }
-    
-    showMsg('播放已停止', 'success');
-}
-
-function playSource(index) {
-    const source = sources[index];
-    
-    if (currentPlayingIndex === index && isPlaying) {
-        stopPlayback();
-        return;
-    }
-    
-    if (isPlaying) {
-        cleanupVideoListeners();
-        resetPlayerState();
-    }
-    
-    currentPlayingIndex = index;
-    const videoPlayer = DOM.videoPlayer;
-    
-    DOM.playerStatus.textContent = '加载中...';
-    DOM.playerStatus.className = 'player-status loading';
-    DOM.currentPlaying.textContent = `正在加载: ${source.name}`;
-    DOM.currentPlaying.style.color = '#2c80ff';
-    DOM.stopBtn.disabled = false;
-    
-    videoPlayer.src = source.url;
-    videoPlayer.load();
-    
-    loadTimeout = setTimeout(() => {
-        if (isPlaying || videoPlayer.readyState === 0) {
-            handlePlayError('加载超时（15秒）');
-        }
-    }, 15000);
-    
-    setupVideoListeners(source);
-    
-    videoPlayer.play().then(() => {
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-            loadTimeout = null;
-        }
-        
-        isPlaying = true;
-        DOM.playerStatus.textContent = '播放中';
-        DOM.playerStatus.className = 'player-status playing';
-        DOM.currentPlaying.textContent = `正在播放: ${source.name}`;
-        
-        showMsg(`开始播放: ${source.name}`, 'success');
-        updateSourceList();
-    }).catch(error => {
-        console.log('自动播放失败:', error.message);
-        
-        DOM.playerStatus.textContent = '已加载，点击播放按钮开始';
-        DOM.playerStatus.className = 'player-status idle';
-        DOM.currentPlaying.textContent = `已加载: ${source.name}`;
-        
-        showMsg(`视频已加载，请手动点击播放按钮`, 'success');
-        
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-            loadTimeout = null;
-        }
-    });
-}
-
-function setupVideoListeners(source) {
-    const videoPlayer = DOM.videoPlayer;
-    
-    const onPlaying = () => {
-        isPlaying = true;
-        DOM.playerStatus.textContent = '播放中';
-        DOM.playerStatus.className = 'player-status playing';
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-            loadTimeout = null;
-        }
-    };
-    
-    const onPause = () => {
-        isPlaying = false;
-        DOM.playerStatus.textContent = '已暂停';
-        DOM.playerStatus.className = 'player-status idle';
-    };
-    
-    const onEnded = () => {
-        isPlaying = false;
-        DOM.playerStatus.textContent = '播放结束';
-        DOM.playerStatus.className = 'player-status idle';
-        showMsg(`播放结束: ${source.name}`, 'success');
-    };
-    
-    const onError = (e) => {
-        console.error('视频播放错误:', e);
-        handlePlayError('视频播放错误');
-    };
-    
-    const onLoadedData = () => {
-        DOM.playerStatus.textContent = '已加载';
-        DOM.playerStatus.className = 'player-status idle';
-        if (loadTimeout) {
-            clearTimeout(loadTimeout);
-            loadTimeout = null;
-        }
-    };
-    
-    const onWaiting = () => {
-        DOM.playerStatus.textContent = '缓冲中...';
-        DOM.playerStatus.className = 'player-status loading';
-    };
-    
-    videoListeners.playing = onPlaying;
-    videoListeners.pause = onPause;
-    videoListeners.ended = onEnded;
-    videoListeners.error = onError;
-    videoListeners.loadeddata = onLoadedData;
-    videoListeners.waiting = onWaiting;
-    
-    videoPlayer.addEventListener('playing', onPlaying);
-    videoPlayer.addEventListener('pause', onPause);
-    videoPlayer.addEventListener('ended', onEnded);
-    videoPlayer.addEventListener('error', onError);
-    videoPlayer.addEventListener('loadeddata', onLoadedData);
-    videoPlayer.addEventListener('waiting', onWaiting);
-}
-
-function handlePlayError(errorMessage) {
-    cleanupVideoListeners();
-    resetPlayerState();
-    
-    DOM.playerStatus.textContent = '播放失败';
-    DOM.playerStatus.className = 'player-status error';
-    DOM.currentPlaying.textContent = `播放失败: ${sources[currentPlayingIndex]?.name || '未知频道'}`;
-    DOM.currentPlaying.style.color = '#f44336';
-    
-    console.error('播放失败:', errorMessage);
-    showMsg(`播放失败: ${errorMessage}`, 'error');
-    
-    if (currentPlayingIndex !== -1) {
-        updateSourceList();
-        currentPlayingIndex = -1;
-    }
-}
-
-// 修复滑动条同步问题
-function initSliders() {
-    // 检测时长滑动条
-    const timeoutSliderValue = DOM.timeoutSlider.value;
-    DOM.timeoutValue.textContent = timeoutSliderValue;
-    
-    // 延迟时间滑动条
-    const delaySliderValue = DOM.delaySlider.value;
-    DOM.delayValue.textContent = delaySliderValue;
-    delayTime = parseInt(delaySliderValue);
-    
-    // 并发数滑动条
-    const concurrencySliderValue = DOM.concurrencySlider.value;
-    DOM.concurrencyValue.textContent = concurrencySliderValue;
-    DOM.currentConcurrency.textContent = concurrencySliderValue;
-    concurrency = parseInt(concurrencySliderValue);
-}
-
-DOM.timeoutSlider.addEventListener('input', function() {
-    DOM.timeoutValue.textContent = this.value;
-});
-
-DOM.delaySlider.addEventListener('input', function() {
-    const value = this.value;
-    DOM.delayValue.textContent = value;
-    delayTime = parseInt(value);
-});
-
-DOM.concurrencySlider.addEventListener('input', function() {
-    const value = this.value;
-    DOM.concurrencyValue.textContent = value;
-    DOM.currentConcurrency.textContent = value;
-    concurrency = parseInt(value);
-});
-
-function stopTesting() {
-    if (abortController) {
-        abortController.abort();
-        abortController = null;
-    }
-    
-    if (startTimer) {
-        clearTimeout(startTimer);
-        startTimer = null;
-    }
-    
-    sources.forEach(source => {
-        if (source.testing) {
-            source.testing = false;
-            source.status = 'pending';
-        }
-    });
-    
-    activeTasks = 0;
-    taskQueue = [];
-    nextIndex = 0;
-    
-    updateConcurrencyStatus();
-    updateSourceList();
-    enableGroupFilter(true);
-}
-
-function resetTesting() {
-    const selectedSources = getSelectedSources();
-    selectedSources.forEach(source => {
-        source.status = 'pending';
-        source.testing = false;
-        source.checkTime = null;
-        source.startTime = null;
-    });
-    
-    completed = 0;
-    valid = [];
-    activeTasks = 0;
-    taskQueue = [];
-    nextIndex = 0;
-    
-    updateStats();
-    updateProgress();
-    updateConcurrencyStatus();
-    updateQueueDisplay();
-}
-
-function updateConcurrencyStatus() {
-    DOM.activeTasks.textContent = activeTasks;
-    DOM.queueSize.textContent = taskQueue.length;
-    
-    if (taskQueue.length > 0 || activeTasks > 0) {
-        DOM.queueStatus.style.display = 'block';
-    } else {
-        DOM.queueStatus.style.display = 'none';
-    }
-}
-
-function updateQueueDisplay() {
-    const queueDisplay = DOM.queueDisplay;
-    queueDisplay.innerHTML = '';
-    
-    const selectedSources = getSelectedSources();
-    
-    for (let i = 0; i < Math.min(10, selectedSources.length); i++) {
-        const source = selectedSources[i];
-        const originalIndex = sources.indexOf(source);
-        const div = document.createElement('span');
-        div.className = 'queue-item';
-        
-        if (i < nextIndex) {
-            if (source.status === 'success') {
-                div.className = 'queue-item success';
-                div.textContent = '✓';
-            } else if (source.status === 'failed') {
-                div.className = 'queue-item failed';
-                div.textContent = '✗';
-            } else if (source.testing) {
-                div.className = 'queue-item active';
-                div.textContent = i + 1;
-            } else {
-                div.className = 'queue-item pending';
-                div.textContent = i + 1;
-            }
-        } else if (i === nextIndex) {
-            div.className = 'queue-item pending';
-            div.textContent = i + 1;
-        } else {
-            div.className = 'queue-item';
-            div.textContent = i + 1;
-        }
-        
-        div.title = `第${i + 1}个: ${source.name} (分组: ${source.group})`;
-        queueDisplay.appendChild(div);
-    }
-    
-    if (selectedSources.length > 10) {
-        const more = document.createElement('span');
-        more.className = 'queue-item';
-        more.textContent = '...';
-        more.title = `还有${selectedSources.length - 10}个`;
-        queueDisplay.appendChild(more);
-    }
-}
-
-async function testSingleSource(source, timeout) {
-    return new Promise((resolve) => {
-        if (!testing || paused) {
-            resolve(false);
+    handleStart: async () => {
+        if (!state.sources.length) {
+            utils.showMsg('请先导入直播源', 'error');
             return;
         }
         
-        const startTime = Date.now();
-        const video = document.createElement('video');
-        video.muted = true;
-        video.preload = 'auto';
-        
-        let timer = setTimeout(() => {
-            const checkTime = (Date.now() - startTime) / 1000;
-            cleanup();
-            resolve({result: false, checkTime});
-        }, timeout);
-        
-        function cleanup() {
-            clearTimeout(timer);
-            video.src = '';
-            video.load();
-            video.remove();
+        const selectedSourcesCount = state.getSelectedSourcesCount();
+        if (!selectedSourcesCount) {
+            utils.showMsg('请先选择要检测的分组', 'error');
+            return;
         }
         
-        if (abortController) {
-            abortController.signal.addEventListener('abort', () => {
-                const checkTime = (Date.now() - startTime) / 1000;
-                cleanup();
-                resolve({result: false, checkTime});
-            });
+        if (state.paused) {
+            state.paused = false;
+            DOM.pauseBtn.textContent = '暂停检测';
+            utils.showMsg('检测已恢复');
+            
+            if (state.activeTasks < state.concurrency && state.nextIndex < selectedSourcesCount) {
+                controller.startIncremental();
+            }
+            return;
         }
         
-        video.onloadeddata = () => {
-            const checkTime = (Date.now() - startTime) / 1000;
-            cleanup();
-            resolve({result: true, checkTime});
-        };
+        if (state.testing) {
+            utils.showMsg('检测正在进行中', 'error');
+            return;
+        }
         
-        video.onerror = () => {
-            const checkTime = (Date.now() - startTime) / 1000;
-            cleanup();
-            resolve({result: false, checkTime});
-        };
+        state.testing = true;
+        state.abortController = new AbortController();
         
-        video.src = source.url;
-        video.load();
-    });
-}
+        state.currentFilter = 'all';
+        document.querySelector('.filter-btn[data-filter="all"]').click();
+        
+        ui.updateSourceList();
+        ui.updateStats();
+        ui.updateConcurrencyStatus();
+        ui.updateQueueDisplay();
+        
+        DOM.startBtn.textContent = '检测中...';
+        DOM.startBtn.disabled = true;
+        DOM.pauseBtn.disabled = false;
+        
+        controller.startConcurrentTesting();
+    },
+    
+    handlePause: () => {
+        if (!state.testing) return;
+        
+        state.paused = !state.paused;
+        DOM.pauseBtn.textContent = state.paused ? '继续检测' : '暂停检测';
+        
+        if (state.paused) {
+            utils.showMsg('检测已暂停');
+            if (state.startTimer) {
+                clearTimeout(state.startTimer);
+                state.startTimer = null;
+            }
+        } else {
+            utils.showMsg('检测已恢复');
+            const selectedSourcesCount = state.getSelectedSourcesCount();
+            if (state.activeTasks < state.concurrency && state.nextIndex < selectedSourcesCount) {
+                controller.startIncremental();
+            }
+        }
+    },
+    
+    handleToggleGroupsPanel: () => {
+        const panel = DOM.groupsPanel;
+        const header = DOM.groupsPanelHeader;
+        const isExpanded = panel.classList.contains('expanded');
+        
+        panel.classList.toggle('expanded');
+        header.classList.toggle('expanded', !isExpanded);
+    },
+    
+    handleDropdownToggle: () => {
+        if (state.testing) {
+            utils.showMsg('检测进行中，无法修改分组选择', 'error');
+            return;
+        }
+        
+        const menu = DOM.groupDropdownMenu;
+        const toggle = DOM.groupDropdownToggle;
+        menu.classList.toggle('show');
+        toggle.classList.toggle('expanded', menu.classList.contains('show'));
+    },
+    
+    handleDocumentClick: (e) => {
+        const menu = DOM.groupDropdownMenu;
+        const toggle = DOM.groupDropdownToggle;
+        if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+            menu.classList.remove('show');
+            toggle.classList.remove('expanded');
+        }
+    },
+    
+    handleExample: (e) => {
+        const target = e.target;
+        if (!target.classList.contains('example-link')) return;
+        
+        const examples = {
+            gitee: 'https://gitee.com/mirrors_iptv/iptv/raw/master/streams/cn.m3u',
+            direct: 'https://iptv-org.github.io/iptv/countries/cn.m3u'
+        };
+        DOM.urlInput.value = examples[target.dataset.example] || '';
+    },
+    
+    handleSourceListClick: (e) => {
+        const target = e.target;
+        if (!target.classList.contains('play-btn')) return;
+        
+        const index = parseInt(target.dataset.index);
+        if (!isNaN(index) && state.sources[index]) {
+            controller.playSource(index);
+        }
+    },
+    
+    handleStopPlayback: () => {
+        controller.stopPlayback();
+    }
+};
 
-function startNewTask() {
-    if (!testing || paused) return null;
-    if (activeTasks >= concurrency) return null;
-    
-    const selectedSources = getSelectedSources();
-    if (nextIndex >= selectedSources.length) return null;
-    
-    const source = selectedSources[nextIndex];
-    const taskIndex = nextIndex;
-    nextIndex++;
-    
-    source.testing = true;
-    source.checkTime = null;
-    source.startTime = Date.now();
-    activeTasks++;
-    
-    // 使用当前滑动条的值
-    const timeout = parseInt(DOM.timeoutSlider.value) * 1000;
-    const task = testSingleSource(source, timeout);
-    
-    taskQueue.push({
-        promise: task,
-        index: taskIndex
-    });
-    
-    task.then(async (resultObj) => {
-        if (!testing) return;
+// 控制器
+const controller = {
+    stopTesting: () => {
+        if (state.abortController) {
+            state.abortController.abort();
+            state.abortController = null;
+        }
         
-        const taskIndexInQueue = taskQueue.findIndex(t => t.index === taskIndex);
-        if (taskIndexInQueue > -1) taskQueue.splice(taskIndexInQueue, 1);
-        activeTasks--;
+        if (state.startTimer) {
+            clearTimeout(state.startTimer);
+            state.startTimer = null;
+        }
         
-        // 使用当前的delayTime
-        if (delayTime > 0) await new Promise(resolve => setTimeout(resolve, delayTime));
-        if (!testing) return;
+        state.sources.forEach(source => {
+            if (source.testing) {
+                source.testing = false;
+                source.status = 'pending';
+            }
+        });
         
-        source.testing = false;
-        // 正确设置检测时间
-        source.checkTime = resultObj.checkTime;
-        source.status = resultObj.result ? 'success' : 'failed';
+        Object.assign(state, {
+            activeTasks: 0,
+            taskQueue: [],
+            nextIndex: 0,
+            testing: false
+        });
         
-        if (resultObj.result) valid.push(source);
-        completed++;
+        ui.updateConcurrencyStatus();
+        ui.updateSourceList();
+        ui.enableGroupFilter(true);
+    },
+    
+    resetTesting: () => {
+        const selectedSources = state.getSelectedSources();
+        selectedSources.forEach(source => {
+            source.status = 'pending';
+            source.testing = false;
+            source.checkTime = null;
+            source.startTime = null;
+        });
         
-        updateProgress();
-        updateStats();
-        updateSourceList();
-        updateConcurrencyStatus();
-        updateQueueDisplay();
+        Object.assign(state, {
+            completed: 0,
+            valid: [],
+            activeTasks: 0,
+            taskQueue: [],
+            nextIndex: 0
+        });
         
-        const selectedSourcesCount = getSelectedSources().length;
-        if (completed === selectedSourcesCount) {
-            testing = false;
+        ui.updateStats();
+        ui.updateProgress();
+        ui.updateConcurrencyStatus();
+        ui.updateQueueDisplay();
+    },
+    
+    enableGroupFilter: (enable) => {
+        const toggleBtn = DOM.groupDropdownToggle;
+        toggleBtn.disabled = !enable;
+        toggleBtn.classList.toggle('disabled', !enable);
+        toggleBtn.style.cursor = enable ? 'pointer' : 'not-allowed';
+        
+        if (!enable) {
+            DOM.groupDropdownMenu.classList.remove('show');
+            toggleBtn.classList.remove('expanded');
+        }
+    },
+    
+    testSingleSource: (source, timeout) => {
+        return new Promise((resolve) => {
+            if (!state.testing || state.paused) {
+                resolve({ result: false, checkTime: 0 });
+                return;
+            }
+            
+            const startTime = Date.now();
+            const video = document.createElement('video');
+            video.muted = true;
+            video.preload = 'auto';
+            
+            const timer = setTimeout(() => {
+                const checkTime = (Date.now() - startTime) / 1000;
+                controller.cleanupVideo(video, timer);
+                resolve({ result: false, checkTime });
+            }, timeout);
+            
+            if (state.abortController) {
+                state.abortController.signal.addEventListener('abort', () => {
+                    const checkTime = (Date.now() - startTime) / 1000;
+                    controller.cleanupVideo(video, timer);
+                    resolve({ result: false, checkTime });
+                });
+            }
+            
+            video.onloadeddata = () => {
+                const checkTime = (Date.now() - startTime) / 1000;
+                controller.cleanupVideo(video, timer);
+                resolve({ result: true, checkTime });
+            };
+            
+            video.onerror = () => {
+                const checkTime = (Date.now() - startTime) / 1000;
+                controller.cleanupVideo(video, timer);
+                resolve({ result: false, checkTime });
+            };
+            
+            video.src = source.url;
+            video.load();
+        });
+    },
+    
+    cleanupVideo: (video, timer) => {
+        clearTimeout(timer);
+        video.src = '';
+        video.load();
+        video.remove();
+    },
+    
+    startNewTask: () => {
+        if (!state.testing || state.paused || state.activeTasks >= state.concurrency) return null;
+        
+        const selectedSources = state.getSelectedSources();
+        if (state.nextIndex >= selectedSources.length) return null;
+        
+        const source = selectedSources[state.nextIndex];
+        const taskIndex = state.nextIndex++;
+        const timeout = parseInt(DOM.timeoutSlider.value) * 1000;
+        
+        source.testing = true;
+        source.checkTime = null;
+        source.startTime = Date.now();
+        state.activeTasks++;
+        
+        const task = controller.testSingleSource(source, timeout);
+        
+        state.taskQueue.push({ promise: task, index: taskIndex });
+        
+        task.then(async (resultObj) => {
+            if (!state.testing) return;
+            
+            const taskIndexInQueue = state.taskQueue.findIndex(t => t.index === taskIndex);
+            if (taskIndexInQueue > -1) state.taskQueue.splice(taskIndexInQueue, 1);
+            state.activeTasks--;
+            
+            if (state.delayTime > 0) await new Promise(resolve => setTimeout(resolve, state.delayTime));
+            if (!state.testing) return;
+            
+            source.testing = false;
+            source.checkTime = resultObj.checkTime;
+            source.status = resultObj.result ? 'success' : 'failed';
+            
+            if (resultObj.result) state.valid.push(source);
+            state.completed++;
+            
+            ui.updateProgress();
+            ui.updateStats();
+            ui.updateSourceList();
+            ui.updateConcurrencyStatus();
+            ui.updateQueueDisplay();
+            
+            const selectedSourcesCount = selectedSources.length;
+            if (state.completed === selectedSourcesCount) {
+                controller.finishTesting();
+            } else if (state.activeTasks < state.concurrency && state.nextIndex < selectedSourcesCount) {
+                controller.startNewTask();
+            }
+        }).catch(() => {
+            const taskIndexInQueue = state.taskQueue.findIndex(t => t.index === taskIndex);
+            if (taskIndexInQueue > -1) state.taskQueue.splice(taskIndexInQueue, 1);
+            state.activeTasks--;
+            ui.updateConcurrencyStatus();
+            ui.updateQueueDisplay();
+        });
+        
+        ui.updateConcurrencyStatus();
+        ui.updateQueueDisplay();
+        ui.updateSourceList();
+        
+        return task;
+    },
+    
+    startIncremental: () => {
+        if (!state.testing || state.paused) return;
+        
+        const selectedSourcesCount = state.getSelectedSourcesCount();
+        if (state.activeTasks >= state.concurrency || state.nextIndex >= selectedSourcesCount) {
+            if (state.startTimer) {
+                clearTimeout(state.startTimer);
+                state.startTimer = null;
+            }
+            return;
+        }
+        
+        controller.startNewTask();
+        
+        if (state.activeTasks < state.concurrency && state.nextIndex < selectedSourcesCount) {
+            state.startTimer = setTimeout(() => controller.startIncremental(), state.startInterval);
+        }
+    },
+    
+    startConcurrentTesting: () => {
+        const selectedSources = state.getSelectedSources();
+        if (!selectedSources.length || !state.testing) {
+            utils.showMsg('请先选择要检测的分组', 'error');
+            state.testing = false;
             DOM.startBtn.textContent = '开始检测';
             DOM.startBtn.disabled = false;
-            DOM.pauseBtn.disabled = true;
-            if (startTimer) {
-                clearTimeout(startTimer);
-                startTimer = null;
-            }
-            enableGroupFilter(true);
-            showMsg('检测完成');
-        } else {
-            if (activeTasks < concurrency && nextIndex < selectedSourcesCount) startNewTask();
+            return;
         }
-    }).catch(() => {
-        const taskIndexInQueue = taskQueue.findIndex(t => t.index === taskIndex);
-        if (taskIndexInQueue > -1) taskQueue.splice(taskIndexInQueue, 1);
-        activeTasks--;
-        updateConcurrencyStatus();
-        updateQueueDisplay();
-    });
-    
-    updateConcurrencyStatus();
-    updateQueueDisplay();
-    updateSourceList();
-    
-    return task;
-}
-
-function startIncrementally() {
-    if (!testing || paused) return;
-    
-    const selectedSourcesCount = getSelectedSources().length;
-    
-    if (activeTasks >= concurrency || nextIndex >= selectedSourcesCount) {
-        if (startTimer) {
-            clearTimeout(startTimer);
-            startTimer = null;
+        
+        controller.resetTesting();
+        controller.enableGroupFilter(false);
+        controller.startNewTask();
+        
+        if (state.concurrency > 1) {
+            state.startTimer = setTimeout(() => controller.startIncremental(), state.startInterval);
         }
-        return;
-    }
+    },
     
-    startNewTask();
-    
-    if (activeTasks < concurrency && nextIndex < selectedSourcesCount) {
-        startTimer = setTimeout(() => {
-            startIncrementally();
-        }, startInterval);
-    }
-}
-
-function startConcurrentTesting() {
-    const selectedSources = getSelectedSources();
-    if (selectedSources.length === 0 || !testing) {
-        showMsg('请先选择要检测的分组', 'error');
-        testing = false;
+    finishTesting: () => {
+        state.testing = false;
         DOM.startBtn.textContent = '开始检测';
         DOM.startBtn.disabled = false;
-        return;
-    }
-    
-    resetTesting();
-    enableGroupFilter(false);
-    startNewTask();
-    
-    if (concurrency > 1) {
-        startTimer = setTimeout(() => {
-            startIncrementally();
-        }, startInterval);
-    }
-}
-
-DOM.startBtn.addEventListener('click', async function() {
-    if(sources.length === 0) {
-        showMsg('请先导入直播源', 'error');
-        return;
-    }
-    
-    const selectedSourcesCount = getSelectedSourcesCount();
-    if (selectedSourcesCount === 0) {
-        showMsg('请先选择要检测的分组', 'error');
-        return;
-    }
-    
-    if(paused) {
-        paused = false;
-        DOM.pauseBtn.textContent = '暂停检测';
-        showMsg('检测已恢复');
+        DOM.pauseBtn.disabled = true;
         
-        if (activeTasks < concurrency && nextIndex < selectedSourcesCount) startIncrementally();
-        return;
-    }
-    
-    if(testing) {
-        showMsg('检测正在进行中', 'error');
-        return;
-    }
-    
-    testing = true;
-    abortController = new AbortController();
-    
-    currentFilter = 'all';
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
-    
-    updateSourceList();
-    updateStats();
-    updateConcurrencyStatus();
-    updateQueueDisplay();
-    
-    const btn = this;
-    btn.textContent = '检测中...';
-    btn.disabled = true;
-    DOM.pauseBtn.disabled = false;
-    
-    startConcurrentTesting();
-});
-
-DOM.pauseBtn.addEventListener('click', function() {
-    if(!testing) return;
-    
-    paused = !paused;
-    this.textContent = paused ? '继续检测' : '暂停检测';
-    
-    if (paused) {
-        showMsg('检测已暂停');
-        if (startTimer) {
-            clearTimeout(startTimer);
-            startTimer = null;
+        if (state.startTimer) {
+            clearTimeout(state.startTimer);
+            state.startTimer = null;
         }
-    } else {
-        showMsg('检测已恢复');
-        const selectedSourcesCount = getSelectedSources().length;
-        if (activeTasks < concurrency && nextIndex < selectedSourcesCount) startIncrementally();
-    }
-});
-
-function enableGroupFilter(enable) {
-    const toggleBtn = DOM.groupDropdownToggle;
-    if (enable) {
-        toggleBtn.disabled = false;
-        toggleBtn.classList.remove('disabled');
-        toggleBtn.style.cursor = 'pointer';
-    } else {
-        toggleBtn.disabled = true;
-        toggleBtn.classList.add('disabled');
-        toggleBtn.style.cursor = 'not-allowed';
-        DOM.groupDropdownMenu.classList.remove('show');
-        toggleBtn.classList.remove('expanded');
-    }
-}
-
-DOM.groupsPanelHeader.addEventListener('click', function() {
-    const panel = DOM.groupsPanel;
-    const isExpanded = panel.classList.contains('expanded');
-    
-    if (isExpanded) {
-        panel.classList.remove('expanded');
-        this.classList.remove('expanded');
-    } else {
-        panel.classList.add('expanded');
-        this.classList.add('expanded');
-        updateGroupsPanel();
-    }
-});
-
-DOM.groupsPanelFooter.querySelector('.select-all-groups-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    selectAllGroups();
-    updateGroupDropdown();
-    updateGroupsPanel();
-    updateSourceList();
-    updateStats();
-});
-
-DOM.groupsPanelFooter.querySelector('.clear-all-groups-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    clearAllGroups();
-    updateGroupDropdown();
-    updateGroupsPanel();
-    updateSourceList();
-    updateStats();
-});
-
-DOM.groupDropdownToggle.addEventListener('click', function() {
-    if (testing) {
-        showMsg('检测进行中，无法修改分组选择', 'error');
-        return;
-    }
-    
-    const menu = DOM.groupDropdownMenu;
-    const isExpanded = menu.classList.contains('show');
-    
-    if (isExpanded) {
-        menu.classList.remove('show');
-        this.classList.remove('expanded');
-    } else {
-        menu.classList.add('show');
-        this.classList.add('expanded');
-    }
-});
-
-document.addEventListener('click', function(e) {
-    const menu = DOM.groupDropdownMenu;
-    const toggle = DOM.groupDropdownToggle;
-    if (!menu.contains(e.target) && !toggle.contains(e.target)) {
-        menu.classList.remove('show');
-        toggle.classList.remove('expanded');
-    }
-});
-
-// 智能导出功能（仅导出在线频道）
-function exportSources() {
-    if (sources.length === 0) {
-        showMsg('没有可导出的直播源', 'error');
-        return;
-    }
-    
-    // 获取要导出的源（仅在线）
-    const sourcesToExport = sources.filter(source => source.status === 'success');
-    
-    if (sourcesToExport.length === 0) {
-        showMsg('没有在线的直播源可导出', 'error');
-        return;
-    }
-    
-    // 构建导出内容（根据原始格式）
-    let exportContent = '';
-    
-    // 按照原始分组信息组织内容
-    const groupsContent = {};
-    
-    sourcesToExport.forEach(source => {
-        const groupName = source.group || '默认分组';
-        if (!groupsContent[groupName]) {
-            groupsContent[groupName] = [];
-        }
-        groupsContent[groupName].push(source);
-    });
-    
-    // 按分组添加内容
-    Object.keys(groupsContent).forEach(groupName => {
-        const groupSources = groupsContent[groupName];
         
-        // 添加分组信息（如果原始有分组信息）
-        const groupInfo = groupInfoMap.get(groupName);
-        if (groupInfo) {
-            if (groupInfo.type === 'genre' && groupInfo.originalLine) {
-                exportContent += groupInfo.originalLine + '\n';
-            } else if (groupInfo.type === 'grouptitle') {
-                // M3U格式，不添加额外的分组行
+        controller.enableGroupFilter(true);
+        utils.showMsg('检测完成');
+    },
+    
+    cleanupVideoListeners: () => {
+        const videoPlayer = DOM.videoPlayer;
+        Object.entries(state.videoListeners).forEach(([event, handler]) => {
+            videoPlayer.removeEventListener(event, handler);
+        });
+        state.videoListeners = {};
+    },
+    
+    resetPlayerState: () => {
+        DOM.videoPlayer.pause();
+        DOM.videoPlayer.currentTime = 0;
+        DOM.videoPlayer.src = '';
+        DOM.videoPlayer.load();
+        
+        Object.assign(state, {
+            isPlaying: false,
+            loadTimeout: null
+        });
+        
+        DOM.playerStatus.textContent = '未播放';
+        DOM.playerStatus.className = 'player-status idle';
+        DOM.currentPlaying.textContent = '未选择频道';
+        DOM.currentPlaying.style.color = '#666';
+        DOM.stopBtn.disabled = true;
+    },
+    
+    stopPlayback: () => {
+        controller.cleanupVideoListeners();
+        controller.resetPlayerState();
+        
+        if (state.currentPlayingIndex !== -1) {
+            ui.updateSourceList();
+            state.currentPlayingIndex = -1;
+        }
+        
+        utils.showMsg('播放已停止', 'success');
+    },
+    
+    playSource: (index) => {
+        const source = state.sources[index];
+        
+        if (state.currentPlayingIndex === index && state.isPlaying) {
+            controller.stopPlayback();
+            return;
+        }
+        
+        if (state.isPlaying) {
+            controller.cleanupVideoListeners();
+            controller.resetPlayerState();
+        }
+        
+        state.currentPlayingIndex = index;
+        const videoPlayer = DOM.videoPlayer;
+        
+        DOM.playerStatus.textContent = '加载中...';
+        DOM.playerStatus.className = 'player-status loading';
+        DOM.currentPlaying.textContent = `正在加载: ${source.name}`;
+        DOM.currentPlaying.style.color = '#2c80ff';
+        DOM.stopBtn.disabled = false;
+        
+        videoPlayer.src = source.url;
+        videoPlayer.load();
+        
+        state.loadTimeout = setTimeout(() => {
+            if (state.isPlaying || videoPlayer.readyState === 0) {
+                controller.handlePlayError('加载超时（15秒）');
             }
+        }, 15000);
+        
+        controller.setupVideoListeners(source);
+        
+        videoPlayer.play().then(() => {
+            if (state.loadTimeout) {
+                clearTimeout(state.loadTimeout);
+                state.loadTimeout = null;
+            }
+            
+            state.isPlaying = true;
+            DOM.playerStatus.textContent = '播放中';
+            DOM.playerStatus.className = 'player-status playing';
+            DOM.currentPlaying.textContent = `正在播放: ${source.name}`;
+            
+            utils.showMsg(`开始播放: ${source.name}`, 'success');
+            ui.updateSourceList();
+        }).catch((error) => {
+            console.log('自动播放失败:', error.message);
+            
+            DOM.playerStatus.textContent = '已加载，点击播放按钮开始';
+            DOM.playerStatus.className = 'player-status idle';
+            DOM.currentPlaying.textContent = `已加载: ${source.name}`;
+            
+            utils.showMsg('视频已加载，请手动点击播放按钮', 'success');
+            
+            if (state.loadTimeout) {
+                clearTimeout(state.loadTimeout);
+                state.loadTimeout = null;
+            }
+        });
+    },
+    
+    setupVideoListeners: (source) => {
+        const videoPlayer = DOM.videoPlayer;
+        const on = (event, handler) => {
+            state.videoListeners[event] = handler;
+            videoPlayer.addEventListener(event, handler);
+        };
+        
+        on('playing', () => {
+            state.isPlaying = true;
+            DOM.playerStatus.textContent = '播放中';
+            DOM.playerStatus.className = 'player-status playing';
+            if (state.loadTimeout) {
+                clearTimeout(state.loadTimeout);
+                state.loadTimeout = null;
+            }
+        });
+        
+        on('pause', () => {
+            state.isPlaying = false;
+            DOM.playerStatus.textContent = '已暂停';
+            DOM.playerStatus.className = 'player-status idle';
+        });
+        
+        on('ended', () => {
+            state.isPlaying = false;
+            DOM.playerStatus.textContent = '播放结束';
+            DOM.playerStatus.className = 'player-status idle';
+            utils.showMsg(`播放结束: ${source.name}`, 'success');
+        });
+        
+        on('error', (e) => {
+            console.error('视频播放错误:', e);
+            controller.handlePlayError('视频播放错误');
+        });
+        
+        on('loadeddata', () => {
+            DOM.playerStatus.textContent = '已加载';
+            DOM.playerStatus.className = 'player-status idle';
+            if (state.loadTimeout) {
+                clearTimeout(state.loadTimeout);
+                state.loadTimeout = null;
+            }
+        });
+        
+        on('waiting', () => {
+            DOM.playerStatus.textContent = '缓冲中...';
+            DOM.playerStatus.className = 'player-status loading';
+        });
+    },
+    
+    handlePlayError: (errorMessage) => {
+        controller.cleanupVideoListeners();
+        controller.resetPlayerState();
+        
+        DOM.playerStatus.textContent = '播放失败';
+        DOM.playerStatus.className = 'player-status error';
+        DOM.currentPlaying.textContent = `播放失败: ${state.sources[state.currentPlayingIndex]?.name || '未知频道'}`;
+        DOM.currentPlaying.style.color = '#f44336';
+        
+        console.error('播放失败:', errorMessage);
+        utils.showMsg(`播放失败: ${errorMessage}`, 'error');
+        
+        if (state.currentPlayingIndex !== -1) {
+            ui.updateSourceList();
+            state.currentPlayingIndex = -1;
+        }
+    },
+    
+    exportSources: () => {
+        if (!state.sources.length) {
+            utils.showMsg('没有可导出的直播源', 'error');
+            return;
         }
         
-        // 添加该分组下的所有频道
-        groupSources.forEach(source => {
-            // 使用原始内容或重新构建
-            if (source.originalContent) {
-                // 如果原始内容包含#EXTINF，那么是M3U格式
-                if (source.originalContent.includes('#EXTINF:')) {
+        const sourcesToExport = state.sources.filter(s => s.status === 'success');
+        if (!sourcesToExport.length) {
+            utils.showMsg('没有在线的直播源可导出', 'error');
+            return;
+        }
+        
+        const groupsContent = {};
+        sourcesToExport.forEach(source => {
+            const groupName = source.group || '默认分组';
+            if (!groupsContent[groupName]) groupsContent[groupName] = [];
+            groupsContent[groupName].push(source);
+        });
+        
+        let exportContent = '';
+        Object.entries(groupsContent).forEach(([groupName, groupSources]) => {
+            const groupInfo = state.groupInfoMap.get(groupName);
+            if (groupInfo?.type === 'genre' && groupInfo.originalLine) {
+                exportContent += groupInfo.originalLine + '\n';
+            }
+            
+            groupSources.forEach(source => {
+                if (source.originalContent) {
                     exportContent += source.originalContent + '\n';
+                } else if (source.extinf) {
+                    exportContent += source.extinf + '\n' + source.url + '\n';
                 } else {
-                    // 对于非M3U格式，直接添加原始行
-                    exportContent += source.originalContent + '\n';
-                }
-            } else {
-                // 重新构建
-                if (source.extinf) {
-                    // M3U格式
-                    exportContent += source.extinf + '\n';
-                    exportContent += source.url + '\n';
-                } else {
-                    // 非M3U格式
                     exportContent += `${source.name},${source.url}\n`;
                 }
-            }
-        });
-    });
-    
-    // 创建下载链接
-    const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `online_sources_${timestamp}.txt`;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showMsg(`已导出${sourcesToExport.length}个在线频道`);
-}
-
-// 更新导出按钮状态
-function updateExportButton() {
-    const hasOnlineSources = sources.some(source => source.status === 'success');
-    DOM.exportOnlineBtn.disabled = !hasOnlineSources;
-}
-
-// 添加导出按钮事件监听
-DOM.exportOnlineBtn.addEventListener('click', () => {
-    exportSources();
-});
-
-function updateProgress() {
-    const selectedSourcesCount = getSelectedSources().length;
-    const percent = selectedSourcesCount > 0 ? Math.round((completed / selectedSourcesCount) * 100) : 0;
-    DOM.progressBar.style.width = percent + '%';
-    DOM.progressText.textContent = `检测进度: ${completed}/${selectedSourcesCount} (${percent}%)`;
-}
-
-function updateStats() {
-    const selectedSources = getSelectedSources();
-    const totalSelected = selectedSources.length;
-    const successCount = selectedSources.filter(s => s.status === 'success').length;
-    const failedCount = selectedSources.filter(s => s.status === 'failed').length;
-    const pendingCount = totalSelected - successCount - failedCount;
-    
-    DOM.total.textContent = totalSelected;
-    DOM.success.textContent = successCount;
-    DOM.failed.textContent = failedCount;
-    DOM.pending.textContent = pendingCount;
-    
-    updateExportButton();
-}
-
-function showMsg(text, type = 'success') {
-    const notif = DOM.notification;
-    notif.textContent = text;
-    notif.style.background = type === 'error' ? '#f44336' : '#4CAF50';
-    notif.style.display = 'block';
-    
-    notif.style.opacity = '1';
-    notif.style.transform = 'translateX(0)';
-    
-    setTimeout(() => {
-        notif.style.opacity = '0';
-        notif.style.transform = 'translateX(20px)';
-        setTimeout(() => {
-            notif.style.display = 'none';
-            notif.style.opacity = '1';
-            notif.style.transform = 'translateX(0)';
-        }, 300);
-    }, 2700);
-}
-
-function isValidUrl(url) {
-    try {
-        new URL(url);
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
-
-async function fetchUrlContent(url) {
-    try {
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Accept': 'text/plain,application/x-mpegURL,text/html',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            });
         });
         
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        return await response.text();
-    } catch (error) {
-        try {
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            const response = await fetch(proxyUrl);
-            if (response.ok) return await response.text();
-            throw new Error('代理获取失败');
-        } catch (proxyError) {
-            throw new Error('无法获取内容: ' + error.message);
-        }
+        const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `online_sources_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        utils.showMsg(`已导出${sourcesToExport.length}个在线频道`);
     }
-}
+};
 
-DOM.urlInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') DOM.urlImportBtn.click();
-});
+// 初始化
+const init = () => {
+    // 绑定事件
+    DOM.fileImportBtn.addEventListener('click', handlers.handleFileImport);
+    DOM.fileInput.addEventListener('change', handlers.handleFileChange);
+    DOM.urlImportBtn.addEventListener('click', handlers.handleUrlImport);
+    document.querySelector('.filter-buttons').addEventListener('click', handlers.handleFilter);
+    document.querySelector('.example-links').addEventListener('click', handlers.handleExample);
+    DOM.sourceList.addEventListener('click', handlers.handleSourceListClick);
+    DOM.stopBtn.addEventListener('click', handlers.handleStopPlayback);
+    DOM.startBtn.addEventListener('click', handlers.handleStart);
+    DOM.pauseBtn.addEventListener('click', handlers.handlePause);
+    DOM.groupsPanelHeader.addEventListener('click', handlers.handleToggleGroupsPanel);
+    DOM.groupDropdownToggle.addEventListener('click', handlers.handleDropdownToggle);
+    document.addEventListener('click', handlers.handleDocumentClick);
+    DOM.groupsPanelFooter.querySelector('.select-all-groups-btn').addEventListener('click', handlers.handleSelectAllGroups);
+    DOM.groupsPanelFooter.querySelector('.clear-all-groups-btn').addEventListener('click', handlers.handleClearAllGroups);
+    DOM.exportOnlineBtn.addEventListener('click', controller.exportSources);
+    
+    // 滑动条事件
+    [DOM.timeoutSlider, DOM.delaySlider, DOM.concurrencySlider].forEach(slider => {
+        slider.addEventListener('input', handlers.handleSliderChange);
+    });
+    
+    DOM.urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handlers.handleUrlImport();
+    });
+    
+    // 初始化UI
+    controller.resetPlayerState();
+    ui.updateStats();
+    ui.updateConcurrencyStatus();
+    ui.refreshGroupsPanel();
+    ui.updateExportButton();
+    
+    console.log(`直播源检测工具 v${VERSION} (紧凑布局版)`);
+    
+    // 页面加载动画
+    requestAnimationFrame(() => {
+        document.body.style.opacity = '1';
+    });
+    
+    // 清理
+    window.addEventListener('beforeunload', () => {
+        controller.stopTesting();
+        controller.stopPlayback();
+    });
+};
 
-document.querySelector('.example-links').addEventListener('click', function(e) {
-    const target = e.target;
-    if (target.classList.contains('example-link')) {
-        const type = target.getAttribute('data-example');
-        switch(type) {
-            case 'gitee':
-                DOM.urlInput.value = 'https://gitee.com/mirrors_iptv/iptv/raw/master/streams/cn.m3u';
-                break;
-            case 'direct':
-                DOM.urlInput.value = 'https://iptv-org.github.io/iptv/countries/cn.m3u';
-                break;
-        }
-    }
-});
-
-DOM.sourceList.addEventListener('click', function(e) {
-    const target = e.target;
-    if (target.classList.contains('play-btn')) {
-        const index = parseInt(target.getAttribute('data-index'));
-        if (!isNaN(index) && sources[index]) playSource(index);
-    }
-});
-
-DOM.stopBtn.addEventListener('click', stopPlayback);
-
-// 初始化滑动条
-initSliders();
-
-resetPlayerState();
-updateStats();
-updateConcurrencyStatus();
-updateGroupsPanel();
-updateExportButton();
-
-console.log(`直播源检测工具 v${VERSION} (紧凑布局版)`);
-
-requestAnimationFrame(() => {
-    document.body.style.opacity = '1';
-});
-
-window.addEventListener('beforeunload', function() {
-    stopTesting();
-    stopPlayback();
-});
+// 启动应用
+init();
 </script>
 </body>
 </html>
