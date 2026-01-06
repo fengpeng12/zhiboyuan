@@ -120,13 +120,184 @@ h3 {
     display: flex;
     flex-direction: column;
     height: 100%;
+    grid-column: 1 / -1; /* 控制区域占满整行 */
 }
 
-/* 预览区域 - 增大 */
+/* 预览区域 - 已移除 */
 .preview-card {
+    display: none; /* 隐藏视频预览区域 */
+}
+
+/* 视频播放弹窗 - 修改为悬浮模式 */
+.video-modal {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 12px;
+    width: 95%;
+    max-width: 800px;
+    max-height: 70vh;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    animation: modalSlideIn 0.3s ease forwards;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.video-modal.show {
+    display: flex;
+}
+
+/* 移除遮罩层，让背景内容可交互 */
+.video-modal-backdrop {
+    display: none; /* 不需要遮罩层 */
+}
+
+.video-modal-header {
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.video-modal-title {
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.video-modal-status {
+    font-size: 11px;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.video-modal-status.playing {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.video-modal-status.error {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+}
+
+.video-modal-status.idle {
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+.video-modal-status.loading {
+    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
+}
+
+.close-video-modal {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 20px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.close-video-modal:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.video-modal-body {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.video-player-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    min-height: 200px;
+}
+
+.video-player-container video {
+    width: 100%;
     height: 100%;
+    max-height: 50vh;
+    object-fit: contain;
+    background: #000;
+}
+
+.video-info {
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.video-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+.video-controls button {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.video-stop-btn {
+    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    color: white;
+    flex: 1;
+}
+
+.video-stop-btn:hover {
+    background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
 }
 
 /* 列表区域 */
@@ -273,25 +444,7 @@ button:disabled {
     }
 }
 
-/* 播放器容器优化 - 增大高度 */
-.player-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    margin-top: 12px;
-}
-
-.player-container video {
-    width: 100%;
-    flex: 1;
-    min-height: 300px; /* 增大最小高度 */
-    max-height: 600px; /* 增大最大高度 */
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    background: #000;
-    object-fit: contain;
-}
+/* 播放器容器优化 - 已移除 */
 
 /* 直播源列表优化 */
 .source-list-container {
@@ -441,69 +594,9 @@ button:disabled {
     border: 2px solid white;
 }
 
-/* 播放状态优化 */
-.player-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
+/* 播放状态优化 - 已移动到弹窗 */
 
-.player-title {
-    font-weight: 600;
-    color: #2c80ff;
-    font-size: 14px;
-}
-
-.player-status {
-    font-size: 11px;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.player-status.playing {
-    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
-}
-
-.player-status.error {
-    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
-}
-
-.player-status.idle {
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-}
-
-.player-status.loading {
-    background: linear-gradient(135deg, #2c80ff 0%, #1a5bbf 100%);
-}
-
-/* 播放控制优化 */
-.player-controls {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
-}
-
-.player-controls button {
-    padding: 8px 12px;
-    font-size: 14px; /* 增大播放控制按钮字体 */
-    border-radius: 6px;
-    flex: 1;
-}
-
-.stop-btn {
-    background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
-}
-
-.stop-btn:hover {
-    background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
-}
+/* 播放控制优化 - 已移动到弹窗 */
 
 /* 队列状态优化 */
 .queue-status {
@@ -1141,8 +1234,8 @@ button:disabled {
         grid-template-columns: 1fr;
     }
     
-    .player-container video {
-        max-height: 500px; /* 增大响应式下的最大高度 */
+    .video-player-container video {
+        max-height: 50vh; /* 响应式高度调整 */
     }
 }
 
@@ -1193,15 +1286,31 @@ button:disabled {
     .player-controls button {
         font-size: 14px;
     }
+    
+    /* 视频弹窗移动端优化 */
+    .video-modal {
+        width: 98%;
+        max-width: 100%;
+        max-height: 60vh;
+        top: 10px;
+    }
+    
+    .video-modal-body {
+        padding: 12px;
+    }
+    
+    .video-modal-header {
+        padding: 10px 12px;
+    }
+    
+    .video-player-container {
+        min-height: 180px;
+    }
 }
 
 @media (max-width: 480px) {
     .file-import-row,
     .url-import-row {
-        flex-direction: column;
-    }
-    
-    .player-controls {
         flex-direction: column;
     }
     
@@ -1218,9 +1327,14 @@ button:disabled {
         padding: 10px;
     }
     
-    .player-container video {
-        min-height: 250px; /* 增大移动端最小高度 */
-        max-height: 450px; /* 增大移动端最大高度 */
+    /* 视频弹窗移动端优化 */
+    .video-modal {
+        max-height: 50vh;
+        top: 5px;
+    }
+    
+    .video-player-container {
+        min-height: 150px;
     }
 }
 
@@ -1251,6 +1365,26 @@ button:disabled {
 </head>
 <body>
     <div class="version-badge">v1.4.0</div>
+    
+    <!-- 视频播放弹窗 - 悬浮模式 -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-modal-header">
+            <div class="video-modal-title">
+                <span>视频预览</span>
+                <div class="video-modal-status idle" id="videoModalStatus">未播放</div>
+            </div>
+            <button class="close-video-modal" id="closeVideoModalBtn">×</button>
+        </div>
+        <div class="video-modal-body">
+            <div class="video-player-container">
+                <video id="videoPlayer" controls></video>
+            </div>
+            <div class="video-info" id="videoModalInfo">未选择频道</div>
+            <div class="video-controls">
+                <button id="videoStopBtn" class="video-stop-btn" disabled>停止播放</button>
+            </div>
+        </div>
+    </div>
     
     <div class="container">
         <!-- 顶部区域 -->
@@ -1307,7 +1441,7 @@ button:disabled {
             </div>
         </div>
 
-        <!-- 中部区域 - 控制和预览并排 -->
+        <!-- 中部区域 - 控制区域占满整行 -->
         <div class="top-section">
             <!-- 控制区域 - 简化 -->
             <div class="card controls-card">
@@ -1336,21 +1470,6 @@ button:disabled {
                 
                 <button id="settingsBtn" class="settings-btn">检测设置</button>
                 <button id="exportOnline" class="export-btn">智能导出(仅在线)</button>
-            </div>
-
-            <!-- 预览区域 - 增大 -->
-            <div class="card preview-card">
-                <div class="player-header">
-                    <h2>视频预览</h2>
-                    <div class="player-status idle" id="playerStatus">未播放</div>
-                </div>
-                <div class="player-container">
-                    <div class="current-playing-info" id="currentPlaying">未选择频道</div>
-                    <video id="videoPlayer" controls></video>
-                    <div class="player-controls">
-                        <button id="stopBtn" class="stop-btn" disabled>停止播放</button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -2532,6 +2651,11 @@ const handlers = {
         if (e.target === domCache.get('settingsModal')) {
             this.handleCloseSettingsModal();
         }
+    },
+    
+    // 新增：关闭视频弹窗
+    handleCloseVideoModal: function() {
+        controller.closeVideoModal();
     }
 };
 
@@ -2816,9 +2940,9 @@ const controller = {
     
     resetPlayerState: function() {
         const videoPlayer = domCache.get('videoPlayer');
-        const playerStatus = domCache.get('playerStatus');
-        const currentPlaying = domCache.get('currentPlaying');
-        const stopBtn = domCache.get('stopBtn');
+        const videoModalStatus = domCache.get('videoModalStatus');
+        const videoModalInfo = domCache.get('videoModalInfo');
+        const videoStopBtn = domCache.get('videoStopBtn');
         
         videoPlayer.pause();
         videoPlayer.currentTime = 0;
@@ -2830,11 +2954,10 @@ const controller = {
             loadTimeout: null
         });
         
-        playerStatus.textContent = '未播放';
-        playerStatus.className = 'player-status idle';
-        currentPlaying.textContent = '未选择频道';
-        currentPlaying.style.color = '#666';
-        stopBtn.disabled = true;
+        videoModalStatus.textContent = '未播放';
+        videoModalStatus.className = 'video-modal-status idle';
+        videoModalInfo.textContent = '未选择频道';
+        videoStopBtn.disabled = true;
     },
     
     stopPlayback: function() {
@@ -2847,6 +2970,14 @@ const controller = {
         }
         
         utils.showMsg('播放已停止', 'success');
+    },
+    
+    // 关闭视频弹窗
+    closeVideoModal: function() {
+        const videoModal = domCache.get('videoModal');
+        videoModal.classList.remove('show');
+        
+        this.stopPlayback();
     },
     
     playSource: function(index) {
@@ -2864,15 +2995,18 @@ const controller = {
         
         state.currentPlayingIndex = index;
         const videoPlayer = domCache.get('videoPlayer');
-        const playerStatus = domCache.get('playerStatus');
-        const currentPlaying = domCache.get('currentPlaying');
-        const stopBtn = domCache.get('stopBtn');
+        const videoModalStatus = domCache.get('videoModalStatus');
+        const videoModalInfo = domCache.get('videoModalInfo');
+        const videoStopBtn = domCache.get('videoStopBtn');
+        const videoModal = domCache.get('videoModal');
         
-        playerStatus.textContent = '加载中...';
-        playerStatus.className = 'player-status loading';
-        currentPlaying.textContent = `正在加载: ${source.name}`;
-        currentPlaying.style.color = '#2c80ff';
-        stopBtn.disabled = false;
+        // 显示弹窗（悬浮模式，不需要修改body样式）
+        videoModal.classList.add('show');
+        
+        videoModalStatus.textContent = '加载中...';
+        videoModalStatus.className = 'video-modal-status loading';
+        videoModalInfo.textContent = `正在加载: ${source.name}`;
+        videoStopBtn.disabled = false;
         
         videoPlayer.src = source.url;
         videoPlayer.load();
@@ -2892,18 +3026,18 @@ const controller = {
             }
             
             state.isPlaying = true;
-            playerStatus.textContent = '播放中';
-            playerStatus.className = 'player-status playing';
-            currentPlaying.textContent = `正在播放: ${source.name}`;
+            videoModalStatus.textContent = '播放中';
+            videoModalStatus.className = 'video-modal-status playing';
+            videoModalInfo.textContent = `正在播放: ${source.name} (分组: ${source.group})`;
             
             utils.showMsg(`开始播放: ${source.name}`, 'success');
             ui.updateSourceList();
         }).catch((error) => {
             console.log('自动播放失败:', error.message);
             
-            playerStatus.textContent = '已加载，点击播放按钮开始';
-            playerStatus.className = 'player-status idle';
-            currentPlaying.textContent = `已加载: ${source.name}`;
+            videoModalStatus.textContent = '已加载，点击播放按钮开始';
+            videoModalStatus.className = 'video-modal-status idle';
+            videoModalInfo.textContent = `已加载: ${source.name} (分组: ${source.group})`;
             
             utils.showMsg('视频已加载，请手动点击播放按钮', 'success');
             
@@ -2916,8 +3050,8 @@ const controller = {
     
     setupVideoListeners: function(source) {
         const videoPlayer = domCache.get('videoPlayer');
-        const playerStatus = domCache.get('playerStatus');
-        const currentPlaying = domCache.get('currentPlaying');
+        const videoModalStatus = domCache.get('videoModalStatus');
+        const videoModalInfo = domCache.get('videoModalInfo');
         
         const on = (event, handler) => {
             state.videoListeners[event] = handler;
@@ -2926,8 +3060,8 @@ const controller = {
         
         on('playing', () => {
             state.isPlaying = true;
-            playerStatus.textContent = '播放中';
-            playerStatus.className = 'player-status playing';
+            videoModalStatus.textContent = '播放中';
+            videoModalStatus.className = 'video-modal-status playing';
             if (state.loadTimeout) {
                 clearTimeout(state.loadTimeout);
                 state.loadTimeout = null;
@@ -2936,14 +3070,14 @@ const controller = {
         
         on('pause', () => {
             state.isPlaying = false;
-            playerStatus.textContent = '已暂停';
-            playerStatus.className = 'player-status idle';
+            videoModalStatus.textContent = '已暂停';
+            videoModalStatus.className = 'video-modal-status idle';
         });
         
         on('ended', () => {
             state.isPlaying = false;
-            playerStatus.textContent = '播放结束';
-            playerStatus.className = 'player-status idle';
+            videoModalStatus.textContent = '播放结束';
+            videoModalStatus.className = 'video-modal-status idle';
             utils.showMsg(`播放结束: ${source.name}`, 'success');
         });
         
@@ -2953,8 +3087,8 @@ const controller = {
         });
         
         on('loadeddata', () => {
-            playerStatus.textContent = '已加载';
-            playerStatus.className = 'player-status idle';
+            videoModalStatus.textContent = '已加载';
+            videoModalStatus.className = 'video-modal-status idle';
             if (state.loadTimeout) {
                 clearTimeout(state.loadTimeout);
                 state.loadTimeout = null;
@@ -2962,8 +3096,8 @@ const controller = {
         });
         
         on('waiting', () => {
-            playerStatus.textContent = '缓冲中...';
-            playerStatus.className = 'player-status loading';
+            videoModalStatus.textContent = '缓冲中...';
+            videoModalStatus.className = 'video-modal-status loading';
         });
     },
     
@@ -2971,13 +3105,12 @@ const controller = {
         this.cleanupVideoListeners();
         this.resetPlayerState();
         
-        const playerStatus = domCache.get('playerStatus');
-        const currentPlaying = domCache.get('currentPlaying');
+        const videoModalStatus = domCache.get('videoModalStatus');
+        const videoModalInfo = domCache.get('videoModalInfo');
         
-        playerStatus.textContent = '播放失败';
-        playerStatus.className = 'player-status error';
-        currentPlaying.textContent = `播放失败: ${state.sources[state.currentPlayingIndex]?.name || '未知频道'}`;
-        currentPlaying.style.color = '#f44336';
+        videoModalStatus.textContent = '播放失败';
+        videoModalStatus.className = 'video-modal-status error';
+        videoModalInfo.textContent = `播放失败: ${state.sources[state.currentPlayingIndex]?.name || '未知频道'}`;
         
         console.error('播放失败:', errorMessage);
         utils.showMsg(`播放失败: ${errorMessage}`, 'error');
@@ -3053,7 +3186,8 @@ const init = function() {
     domCache.get('fileImportBtn').addEventListener('click', handlers.handleFileImport);
     domCache.get('fileInput').addEventListener('change', handlers.handleFileChange);
     domCache.get('urlImportBtn').addEventListener('click', handlers.handleUrlImport);
-    domCache.get('stopBtn').addEventListener('click', handlers.handleStopPlayback);
+    domCache.get('videoStopBtn').addEventListener('click', handlers.handleStopPlayback);
+    domCache.get('closeVideoModalBtn').addEventListener('click', handlers.handleCloseVideoModal);
     domCache.get('start').addEventListener('click', handlers.handleStart);
     domCache.get('pause').addEventListener('click', handlers.handlePause);
     domCache.get('settingsBtn').addEventListener('click', handlers.handleOpenSettingsModal);
@@ -3088,7 +3222,7 @@ const init = function() {
     ui.refreshGroupModal();
     ui.updateExportButton();
     
-    console.log(`直播源检测工具 v${VERSION} (性能优化版)`);
+    console.log(`直播源检测工具 v${VERSION} (悬浮弹窗播放版)`);
     console.log('性能监控已启用');
     
     // 页面加载完成后执行
