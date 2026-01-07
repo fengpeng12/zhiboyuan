@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>直播源检测 v1.4.0</title>
+    <title>直播源检测 v1.4.1</title>
     <style>
 /* 基础重置 */
 * {
@@ -929,6 +929,43 @@ button:disabled {
     box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
 }
 
+/* 新增：勾选导出按钮 */
+.export-selected-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
+    font-size: 16px;
+}
+
+.export-selected-btn:hover {
+    background: linear-gradient(135deg, #6b46c1 0%, #553c9a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(107, 70, 193, 0.3);
+}
+
+/* 新增：全选/取消全选按钮 */
+.select-all-btn-compact {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+    color: #4a5568;
+    border: 2px solid #e1e5eb;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    flex: 1;
+}
+
+.select-all-btn-compact:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border-color: #2c80ff;
+    color: #2c80ff;
+}
+
 /* 状态信息 */
 .status-info {
     display: flex;
@@ -1208,6 +1245,37 @@ button:disabled {
     border-left: 3px solid #2c80ff;
 }
 
+/* 新增：复选框样式 */
+.source-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #2c80ff;
+}
+
+.source-checkbox:checked {
+    background-color: #2c80ff;
+}
+
+/* 勾选统计信息 */
+.selection-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 12px;
+    color: #718096;
+}
+
+.selection-stats .selected-count {
+    color: #2c80ff;
+    font-weight: bold;
+}
+
 /* 滚动条美化 */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1364,7 +1432,7 @@ button:disabled {
     </style>
 </head>
 <body>
-    <div class="version-badge">v1.4.0</div>
+    <div class="version-badge">v1.4.1</div>
     
     <!-- 视频播放弹窗 - 悬浮模式 -->
     <div class="video-modal" id="videoModal">
@@ -1470,6 +1538,8 @@ button:disabled {
                 
                 <button id="settingsBtn" class="settings-btn">检测设置</button>
                 <button id="exportOnline" class="export-btn">智能导出(仅在线)</button>
+                <!-- 新增：勾选导出按钮 -->
+                <button id="exportSelected" class="export-selected-btn" disabled>导出勾选频道</button>
             </div>
         </div>
 
@@ -1484,11 +1554,19 @@ button:disabled {
                             <button class="filter-btn active" data-filter="all">全部</button>
                             <button class="filter-btn" data-filter="online">在线</button>
                             <button class="filter-btn" data-filter="offline">离线</button>
+                            <!-- 新增：全选/取消全选按钮 -->
+                            <button class="select-all-btn-compact" id="selectAllBtn">全选当前列表</button>
                         </div>
                     </div>
                     
                     <div class="source-list" id="sourceList">
                         <div style="text-align: center; padding: 20px; color: #999;">暂无直播源</div>
+                    </div>
+                    
+                    <!-- 新增：勾选统计信息 -->
+                    <div class="selection-stats" id="selectionStats" style="display: none;">
+                        <div>已勾选: <span class="selected-count" id="selectedCount">0</span> 个频道</div>
+                        <div>点击上方"全选当前列表"可快速选择</div>
                     </div>
                     
                     <div class="stats">
@@ -1531,10 +1609,10 @@ button:disabled {
                     
                     <div class="setting-item-modal">
                         <label>并发数: <span class="setting-value" id="concurrencyValue">5</span></label>
-                        <input type="range" id="concurrencySlider" min="1" max="30" value="5">
+                        <input type="range" id="concurrencySlider" min="1" max="50" value="5">
                         <div style="display: flex; justify-content: space-between; font-size: 11px; color: #718096;">
                             <span>1个</span>
-                            <span>30个</span>
+                            <span>50个</span>
                         </div>
                     </div>
                 </div>
@@ -1579,7 +1657,7 @@ button:disabled {
 // ==================== 性能优化开始 ====================
 
 // 版本常量
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 
 // 性能监控器
 const perfMonitor = {
@@ -1692,7 +1770,7 @@ const state = {
     abortController: null,
     currentFilter: 'all',
     delayTime: 100,
-    concurrency: 5,
+    concurrency: 5, // 修改：从30改为5
     activeTasks: 0,
     taskQueue: [],
     nextIndex: 0,
@@ -1707,6 +1785,9 @@ const state = {
     videoListeners: {},
     originalContent: '',
     groupInfoMap: new Map(),
+    
+    // 新增：勾选状态 - 修复：使用对象存储，键是源ID
+    selectedSources: {}, // 对象，键是源ID，值是布尔值（是否被选中）
     
     // 添加索引以提高查找速度
     sourceById: new Map(),
@@ -1785,6 +1866,78 @@ state.buildGroupIndex = function() {
         }
         this.sourcesByGroup.get(group).push(source);
     });
+};
+
+// 新增：获取当前筛选后的源
+state.getFilteredSources = function() {
+    perfMonitor.logOperation();
+    
+    const selectedSources = this.getSelectedSources();
+    let filteredSources = selectedSources;
+    
+    if (this.currentFilter === 'online') {
+        filteredSources = selectedSources.filter(s => s.status === 'success');
+    } else if (this.currentFilter === 'offline') {
+        filteredSources = selectedSources.filter(s => s.status === 'failed');
+    }
+    
+    return filteredSources;
+};
+
+// 新增：获取勾选源的数量 - 修复：从对象中获取
+state.getSelectedCount = function() {
+    return Object.values(this.selectedSources).filter(selected => selected === true).length;
+};
+
+// 新增：切换源的勾选状态 - 修复：改为对象操作
+state.toggleSourceSelection = function(sourceId) {
+    if (this.selectedSources[sourceId]) {
+        delete this.selectedSources[sourceId];
+    } else {
+        this.selectedSources[sourceId] = true;
+    }
+    console.log('切换勾选状态:', sourceId, '当前选中:', this.selectedSources[sourceId], '选中总数:', this.getSelectedCount());
+};
+
+// 新增：检查源是否被勾选 - 修复：从对象中检查
+state.isSourceSelected = function(sourceId) {
+    return !!this.selectedSources[sourceId];
+};
+
+// 新增：全选/取消全选当前列表 - 修复：改为对象操作
+state.toggleSelectAll = function() {
+    const filteredSources = this.getFilteredSources();
+    
+    // 如果已经全部选中，则取消全选
+    const allSelected = filteredSources.every(source => this.selectedSources[source.id]);
+    
+    if (allSelected) {
+        filteredSources.forEach(source => {
+            delete this.selectedSources[source.id];
+        });
+    } else {
+        filteredSources.forEach(source => {
+            this.selectedSources[source.id] = true;
+        });
+    }
+    
+    return !allSelected; // 返回新的选择状态
+};
+
+// 新增：清空所有勾选 - 修复：清空对象
+state.clearAllSelections = function() {
+    this.selectedSources = {};
+};
+
+// 新增：获取所有被勾选的源对象 - 修复：从对象中获取
+state.getSelectedSourceObjects = function() {
+    const selectedSources = [];
+    this.sources.forEach(source => {
+        if (this.selectedSources[source.id]) {
+            selectedSources.push(source);
+        }
+    });
+    return selectedSources;
 };
 
 // ==================== 工具函数 ====================
@@ -1898,6 +2051,7 @@ const parser = {
         state.originalContent = content;
         state.filteredSourcesCache = null;
         state.selectedSourcesCache = null;
+        state.selectedSources = {}; // 修复：清空勾选状态，改为对象
         
         const lines = content.split('\n');
         const sourceMap = new Map();
@@ -1919,7 +2073,7 @@ const parser = {
             const key = `${finalUrl}_${finalName}`;
             if (!sourceMap.has(key)) {
                 const source = {
-                    id: Date.now() + Math.random(),
+                    id: (Date.now() + Math.random()).toString(), // 确保ID是字符串
                     name: finalName || utils.getNameFromUrl(finalUrl),
                     url: finalUrl,
                     status: 'pending',
@@ -1930,7 +2084,8 @@ const parser = {
                     extinf: finalExtInf,
                     originalLine: lineIndex,
                     originalContent: originalLineContent,
-                    groupType: currentGroupInfo.type
+                    groupType: currentGroupInfo.type,
+                    selected: false // 新增：默认未勾选
                 };
                 state.sources.push(source);
                 sourceMap.set(key, source);
@@ -2028,6 +2183,10 @@ const parser = {
         ui.updateGroups();
         ui.updateStats();
         ui.updateExportButton();
+        ui.updateSelectionStats(); // 新增：更新勾选统计
+        
+        // 关键修复：强制立即更新列表，不通过队列延迟
+        ui.updateSourceList(true);
         
         console.log('解析完成，性能统计:', perfMonitor.getStats());
     }
@@ -2228,6 +2387,36 @@ const ui = {
         domUpdateQueue.enqueue(() => {
             const exportBtn = domCache.get('exportOnline');
             exportBtn.disabled = !state.sources.some(s => s.status === 'success');
+            
+            // 新增：更新勾选导出按钮状态 - 修复：只要有勾选就启用
+            const exportSelectedBtn = domCache.get('exportSelected');
+            exportSelectedBtn.disabled = state.getSelectedCount() === 0;
+        });
+    },
+    
+    // 新增：更新勾选统计信息
+    updateSelectionStats: function() {
+        domUpdateQueue.enqueue(() => {
+            const selectedCount = state.getSelectedCount();
+            const selectionStats = domCache.get('selectionStats');
+            const selectedCountEl = domCache.get('selectedCount');
+            const selectAllBtn = domCache.get('selectAllBtn');
+            
+            if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+            
+            if (selectionStats) {
+                selectionStats.style.display = selectedCount > 0 ? 'flex' : 'none';
+            }
+            
+            if (selectAllBtn) {
+                const filteredSources = state.getFilteredSources();
+                const allSelected = filteredSources.length > 0 && 
+                                  filteredSources.every(source => state.isSourceSelected(source.id));
+                selectAllBtn.textContent = allSelected ? '取消全选' : '全选当前列表';
+            }
+            
+            // 更新导出按钮状态
+            this.updateExportButton();
         });
     },
     
@@ -2237,7 +2426,8 @@ const ui = {
         const container = domCache.get('sourceList');
         if (!container) return;
         
-        domUpdateQueue.enqueue(() => {
+        // 使用立即执行，不放入队列，确保列表立即显示
+        const updateFunction = () => {
             const selectedSources = state.getSelectedSources();
             let filteredSources = selectedSources;
             
@@ -2269,7 +2459,7 @@ const ui = {
                 };
                 const emptyMsg = document.createElement('div');
                 emptyMsg.style.cssText = 'text-align: center; padding: 20px; color: #999;';
-                emptyMsg.textContent = messages[state.currentFilter];
+                emptyMsg.textContent = messages[state.currentFilter] || messages.all;
                 fragment.appendChild(emptyMsg);
             } else {
                 // 重用现有DOM元素
@@ -2277,20 +2467,19 @@ const ui = {
                 const existingItemsMap = new Map();
                 
                 existingItems.forEach(item => {
-                    const index = item.getAttribute('data-index');
-                    if (index) existingItemsMap.set(parseInt(index), item);
+                    const sourceId = item.getAttribute('data-id');
+                    if (sourceId) existingItemsMap.set(sourceId, item);
                 });
                 
                 filteredSources.forEach(source => {
-                    const originalIndex = state.sources.findIndex(s => s.id === source.id);
-                    let item = existingItemsMap.get(originalIndex);
+                    let item = existingItemsMap.get(source.id);
                     
                     if (item && !forceUpdate) {
                         // 更新现有元素
-                        this.updateSourceItem(item, source, originalIndex);
+                        this.updateSourceItem(item, source);
                     } else {
                         // 创建新元素
-                        item = this.createSourceItem(source, originalIndex);
+                        item = this.createSourceItem(source);
                     }
                     fragment.appendChild(item);
                 });
@@ -2299,22 +2488,32 @@ const ui = {
             // 一次性替换所有子元素
             container.innerHTML = '';
             container.appendChild(fragment);
-        });
+            
+            // 更新勾选统计
+            this.updateSelectionStats();
+        };
+        
+        // 关键修复：导入后立即执行，不延迟
+        if (forceUpdate) {
+            updateFunction();
+        } else {
+            domUpdateQueue.enqueue(updateFunction);
+        }
     },
     
-    // 创建源列表项
-    createSourceItem: function(source, originalIndex) {
+    // 创建源列表项 - 修改：增加复选框
+    createSourceItem: function(source) {
         const item = document.createElement('div');
         item.className = 'source-item';
-        item.setAttribute('data-index', originalIndex);
         item.setAttribute('data-id', source.id);
         
-        return this.updateSourceItem(item, source, originalIndex, true);
+        return this.updateSourceItem(item, source, true);
     },
     
-    // 更新源列表项
-    updateSourceItem: function(item, source, originalIndex, isNew = false) {
-        if (originalIndex === state.currentPlayingIndex) {
+    // 更新源列表项 - 修改：增加复选框
+    updateSourceItem: function(item, source, isNew = false) {
+        // 高亮当前播放的源
+        if (source.id === state.sources[state.currentPlayingIndex]?.id) {
             item.style.cssText = 'background: #f0f8ff; border-left: 3px solid #2c80ff;';
         } else {
             item.style.cssText = '';
@@ -2338,8 +2537,12 @@ const ui = {
         const groupInfo = source.group && source.group !== '未分组' ? 
             `<div style="font-size: 9px; color: #888; margin-top: 2px;">分组: ${source.group}</div>` : '';
         
+        // 检查是否被勾选 - 修复：使用新的方法
+        const isChecked = state.isSourceSelected(source.id);
+        
         if (isNew || !item.innerHTML) {
             item.innerHTML = `
+                <input type="checkbox" class="source-checkbox" data-id="${source.id}" ${isChecked ? 'checked' : ''}>
                 <div style="width: 16px; height: 16px; border-radius: 50%; background: ${config.color}; margin-right: 8px; flex-shrink: 0;"></div>
                 <div style="flex: 1; min-width: 0;">
                     <div class="channel-name" title="${source.name}">${source.name}</div>
@@ -2350,27 +2553,63 @@ const ui = {
                     ${groupInfo}
                 </div>
                 <div class="right-section">
-                    <button class="play-btn" style="padding: 6px 10px; font-size: 12px; min-width: 50px;" data-index="${originalIndex}">播放</button>
+                    <button class="play-btn" style="padding: 6px 10px; font-size: 12px; min-width: 50px;" data-id="${source.id}">播放</button>
                     <div style="padding: 6px 8px; color: #666; font-size: 11px; white-space: nowrap;">${config.text}</div>
                 </div>
             `;
         } else {
             // 只更新需要变化的部分
+            const checkbox = item.querySelector('.source-checkbox');
             const statusDot = item.querySelector('div[style*="width: 16px"]');
             const checkTime = item.querySelector('.check-time');
             const statusText = item.querySelector('.right-section > div:last-child');
             const playBtn = item.querySelector('.play-btn');
             
+            if (checkbox) checkbox.checked = isChecked;
             if (statusDot) statusDot.style.background = config.color;
             if (checkTime) {
                 checkTime.textContent = `检测: ${timeDisplay}`;
                 checkTime.className = `check-time ${config.timeClass}`;
             }
             if (statusText) statusText.textContent = config.text;
-            if (playBtn) playBtn.setAttribute('data-index', originalIndex);
+            if (playBtn) playBtn.setAttribute('data-id', source.id);
+            
+            // 更新分组信息
+            const groupInfoDiv = item.querySelector('div[style*="font-size: 9px"]');
+            if (groupInfo) {
+                if (!groupInfoDiv) {
+                    const infoContainer = item.querySelector('div[style*="flex: 1"]');
+                    if (infoContainer) {
+                        const newGroupInfo = document.createElement('div');
+                        newGroupInfo.style.cssText = 'font-size: 9px; color: #888; margin-top: 2px;';
+                        newGroupInfo.textContent = `分组: ${source.group}`;
+                        const checkTimeDiv = infoContainer.querySelector('div[style*="display: flex"]');
+                        if (checkTimeDiv) {
+                            infoContainer.insertBefore(newGroupInfo, checkTimeDiv.nextSibling);
+                        }
+                    }
+                } else {
+                    groupInfoDiv.textContent = `分组: ${source.group}`;
+                }
+            } else if (groupInfoDiv) {
+                groupInfoDiv.remove();
+            }
         }
         
         return item;
+    },
+    
+    // 更新单个源列表项（用于检测状态更新）
+    updateSingleSourceItem: function(sourceId) {
+        const container = domCache.get('sourceList');
+        const item = container.querySelector(`.source-item[data-id="${sourceId}"]`);
+        
+        if (item) {
+            const source = state.sourceById.get(sourceId);
+            if (source) {
+                this.updateSourceItem(item, source);
+            }
+        }
     }
 };
 
@@ -2392,6 +2631,7 @@ const handlers = {
             ui.refreshGroupModal();
             ui.updateSourceList();
             ui.updateStats();
+            ui.updateSelectionStats(); // 新增：更新勾选统计
         }
     },
     
@@ -2410,6 +2650,7 @@ const handlers = {
         ui.refreshGroupModal();
         ui.updateSourceList();
         ui.updateStats();
+        ui.updateSelectionStats(); // 新增：更新勾选统计
         utils.showMsg('已选择所有分组');
     },
     
@@ -2426,6 +2667,7 @@ const handlers = {
         ui.refreshGroupModal();
         ui.updateSourceList();
         ui.updateStats();
+        ui.updateSelectionStats(); // 新增：更新勾选统计
         utils.showMsg('已清除所有分组选择');
     },
     
@@ -2440,8 +2682,11 @@ const handlers = {
         const reader = new FileReader();
         reader.onload = (e) => {
             parser.parseContent(e.target.result);
-            ui.updateSourceList();
-            utils.showMsg(`已导入${state.sources.length}个频道`);
+            // 关键修复：确保列表更新完成
+            setTimeout(() => {
+                ui.updateSourceList(true);
+                utils.showMsg(`已导入${state.sources.length}个频道`);
+            }, 50);
         };
         reader.readAsText(file);
     },
@@ -2471,8 +2716,11 @@ const handlers = {
             const content = await utils.fetchUrlContent(url);
             if (content) {
                 parser.parseContent(content);
-                ui.updateSourceList();
-                utils.showMsg(`已从URL导入${state.sources.length}个频道`);
+                // 关键修复：确保列表更新完成
+                setTimeout(() => {
+                    ui.updateSourceList(true);
+                    utils.showMsg(`已从URL导入${state.sources.length}个频道`);
+                }, 50);
             } else {
                 utils.showMsg('无法获取内容，请检查URL或网络', 'error');
             }
@@ -2489,7 +2737,27 @@ const handlers = {
         state.currentFilter = target.dataset.filter;
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         target.classList.add('active');
+        ui.updateSourceList(true);
+        ui.updateSelectionStats(); // 新增：更新勾选统计
+    },
+    
+    // 新增：处理复选框点击
+    handleCheckboxClick: function(e, target) {
+        const sourceId = target.dataset.id;
+        if (sourceId) {
+            state.toggleSourceSelection(sourceId);
+            ui.updateSelectionStats();
+            ui.updateExportButton();
+        }
+    },
+    
+    // 新增：处理全选按钮点击
+    handleSelectAllClick: function() {
+        const wasSelected = state.toggleSelectAll();
         ui.updateSourceList();
+        ui.updateSelectionStats();
+        ui.updateExportButton();
+        utils.showMsg(wasSelected ? '已全选当前列表' : '已取消全选当前列表');
     },
     
     handleSliderChange: function(e) {
@@ -2544,7 +2812,7 @@ const handlers = {
         const allFilterBtn = document.querySelector('.filter-btn[data-filter="all"]');
         if (allFilterBtn) allFilterBtn.click();
         
-        ui.updateSourceList();
+        ui.updateSourceList(true);
         ui.updateStats();
         ui.updateConcurrencyStatus();
         ui.updateQueueDisplay();
@@ -2634,9 +2902,12 @@ const handlers = {
     },
     
     handleSourceListClick: function(e, target) {
-        const index = parseInt(target.dataset.index);
-        if (!isNaN(index) && state.sources[index]) {
-            controller.playSource(index);
+        const sourceId = target.dataset.id;
+        if (sourceId) {
+            const index = state.sources.findIndex(s => s.id === sourceId);
+            if (index !== -1) {
+                controller.playSource(index);
+            }
         }
     },
     
@@ -2656,6 +2927,11 @@ const handlers = {
     // 新增：关闭视频弹窗
     handleCloseVideoModal: function() {
         controller.closeVideoModal();
+    },
+    
+    // 新增：导出勾选频道 - 修复版
+    handleExportSelected: function() {
+        controller.exportSelectedSources();
     }
 };
 
@@ -2688,7 +2964,7 @@ const controller = {
         });
         
         ui.updateConcurrencyStatus();
-        ui.updateSourceList();
+        ui.updateSourceList(true);
         this.enableGroupSelector(true);
         this.enableSettingsBtn(true);
     },
@@ -2839,12 +3115,8 @@ const controller = {
             ui.updateProgress();
             ui.updateStats();
             
-            // 只更新单个源，而不是整个列表
-            if (state.currentFilter === 'all') {
-                ui.updateSourceList();
-            } else {
-                ui.updateSourceList(true);
-            }
+            // 关键修复：更新单个源的状态显示
+            ui.updateSingleSourceItem(source.id);
             
             ui.updateConcurrencyStatus();
             ui.updateQueueDisplay();
@@ -2866,7 +3138,7 @@ const controller = {
         
         ui.updateConcurrencyStatus();
         ui.updateQueueDisplay();
-        ui.updateSourceList();
+        ui.updateSingleSourceItem(source.id);
         
         return task;
     },
@@ -2965,7 +3237,7 @@ const controller = {
         this.resetPlayerState();
         
         if (state.currentPlayingIndex !== -1) {
-            ui.updateSourceList();
+            ui.updateSingleSourceItem(state.sources[state.currentPlayingIndex]?.id);
             state.currentPlayingIndex = -1;
         }
         
@@ -3030,8 +3302,10 @@ const controller = {
             videoModalStatus.className = 'video-modal-status playing';
             videoModalInfo.textContent = `正在播放: ${source.name} (分组: ${source.group})`;
             
+            // 更新列表项的高亮状态
+            ui.updateSingleSourceItem(source.id);
+            
             utils.showMsg(`开始播放: ${source.name}`, 'success');
-            ui.updateSourceList();
         }).catch((error) => {
             console.log('自动播放失败:', error.message);
             
@@ -3116,11 +3390,12 @@ const controller = {
         utils.showMsg(`播放失败: ${errorMessage}`, 'error');
         
         if (state.currentPlayingIndex !== -1) {
-            ui.updateSourceList();
+            ui.updateSingleSourceItem(state.sources[state.currentPlayingIndex]?.id);
             state.currentPlayingIndex = -1;
         }
     },
     
+    // 修改：导出所有在线源（不考虑勾选）
     exportSources: function() {
         if (!state.sources.length) {
             utils.showMsg('没有可导出的直播源', 'error');
@@ -3169,6 +3444,72 @@ const controller = {
         URL.revokeObjectURL(url);
         
         utils.showMsg(`已导出${sourcesToExport.length}个在线频道`);
+    },
+    
+    // 新增：导出勾选频道 - 修复版
+    exportSelectedSources: function() {
+        const selectedCount = state.getSelectedCount();
+        console.log('导出勾选频道，选中数量:', selectedCount, '选中源:', state.selectedSources);
+        
+        if (selectedCount === 0) {
+            utils.showMsg('请先勾选要导出的频道', 'error');
+            return;
+        }
+        
+        // 获取所有被勾选的源对象 - 修复：直接从state.sources中筛选
+        const selectedSources = state.sources.filter(source => state.selectedSources[source.id]);
+        console.log('筛选出的选中源:', selectedSources);
+        
+        if (selectedSources.length === 0) {
+            utils.showMsg('没有找到勾选的频道，请重新勾选', 'error');
+            return;
+        }
+        
+        // 按分组组织源
+        const groupsContent = {};
+        selectedSources.forEach(source => {
+            const groupName = source.group || '默认分组';
+            if (!groupsContent[groupName]) groupsContent[groupName] = [];
+            groupsContent[groupName].push(source);
+        });
+        
+        // 构建导出内容
+        let exportContent = '';
+        Object.entries(groupsContent).forEach(([groupName, groupSources]) => {
+            const groupInfo = state.groupInfoMap.get(groupName);
+            if (groupInfo?.type === 'genre' && groupInfo.originalLine) {
+                exportContent += groupInfo.originalLine + '\n';
+            }
+            
+            groupSources.forEach(source => {
+                if (source.originalContent) {
+                    exportContent += source.originalContent + '\n';
+                } else if (source.extinf) {
+                    exportContent += source.extinf + '\n' + source.url + '\n';
+                } else {
+                    exportContent += `${source.name},${source.url}\n`;
+                }
+            });
+        });
+        
+        // 创建下载链接
+        const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selected_sources_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        utils.showMsg(`已导出${selectedSources.length}个勾选频道`);
+        
+        // 导出后清空勾选状态
+        state.clearAllSelections();
+        ui.updateSelectionStats();
+        ui.updateExportButton();
+        ui.updateSourceList();
     }
 };
 
@@ -3181,6 +3522,7 @@ const init = function() {
     eventDelegate.add(document, '.filter-btn', 'click', handlers.handleFilter);
     eventDelegate.add(document, '.example-link', 'click', handlers.handleExample);
     eventDelegate.add(domCache.get('sourceList'), '.play-btn', 'click', handlers.handleSourceListClick);
+    eventDelegate.add(domCache.get('sourceList'), '.source-checkbox', 'click', handlers.handleCheckboxClick);
     
     // 直接事件绑定
     domCache.get('fileImportBtn').addEventListener('click', handlers.handleFileImport);
@@ -3198,6 +3540,8 @@ const init = function() {
     domCache.get('modalSelectAllBtn').addEventListener('click', handlers.handleSelectAllGroups);
     domCache.get('modalClearAllBtn').addEventListener('click', handlers.handleClearAllGroups);
     domCache.get('exportOnline').addEventListener('click', controller.exportSources);
+    domCache.get('exportSelected').addEventListener('click', handlers.handleExportSelected);
+    domCache.get('selectAllBtn').addEventListener('click', handlers.handleSelectAllClick);
     domCache.get('groupSelectorModal').addEventListener('click', handlers.handleModalClick.bind(handlers));
     domCache.get('settingsModal').addEventListener('click', handlers.handleModalClick.bind(handlers));
     
@@ -3221,8 +3565,9 @@ const init = function() {
     ui.updateConcurrencyStatus();
     ui.refreshGroupModal();
     ui.updateExportButton();
+    ui.updateSelectionStats();
     
-    console.log(`直播源检测工具 v${VERSION} (悬浮弹窗播放版)`);
+    console.log(`直播源检测工具 v${VERSION} (悬浮弹窗播放版 + 勾选导出功能)`);
     console.log('性能监控已启用');
     
     // 页面加载完成后执行
