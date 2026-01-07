@@ -912,7 +912,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     }
   };
   
-  // 检测器（保持不变）
+  // 检测器 - 使用修改后的检测方法
   const detector = {
     queue: [],
     workers: [],
@@ -951,58 +951,98 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       }
       
       detector.timeout = parseInt(timeoutSlider?.value || 5) * 1000;
-      detector.delay = parseInt(delaySlider?.value || 200);  // 读取HTML中的默认值200
+      detector.delay = parseInt(delaySlider?.value || 200);
       detector.concurrency = parseInt(concurrencySlider?.value || 10);
     },
     
-    testSource: async (source, index) => {
+    // 修改后的检测方法 - 使用video元素检测直播源
+    testSource: (source, index) => {
       return new Promise((resolve) => {
-        const startTime = Date.now();
+        const timeout = detector.timeout; // 使用当前设置的超时时间
         const video = document.createElement('video');
-        video.style.display = 'none';
-        document.body.appendChild(video);
+        video.muted = true; // 静音避免声音干扰
+        video.preload = 'auto'; // 预加载
+        video.style.display = 'none'; // 隐藏视频元素
         
-        let timeoutId, resolved = false;
+        let timer = setTimeout(() => {
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'invalid', 
+            detectionTime: timeout,
+            reason: '超时'
+          });
+        }, timeout);
         
-        const cleanup = () => {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timeoutId);
-          video.pause();
+        // 记录开始时间
+        const startTime = Date.now();
+        
+        function cleanup() {
+          clearTimeout(timer);
           video.src = '';
           video.load();
-          document.body.removeChild(video);
-        };
+          if (video.parentNode) {
+            video.parentNode.removeChild(video);
+          }
+        }
         
-        const onSuccess = () => {
-          if (resolved) return;
+        // 成功加载视频数据
+        video.onloadeddata = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
-          resolve({ index, status: 'valid', detectionTime });
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '成功加载视频数据'
+          });
         };
         
-        const onError = () => {
-          if (resolved) return;
+        // 视频可以播放
+        video.oncanplay = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
-          resolve({ index, status: 'invalid', detectionTime });
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '视频可以播放'
+          });
         };
         
-        timeoutId = setTimeout(() => {
-          if (resolved) return;
+        // 视频可以流畅播放
+        video.oncanplaythrough = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
-          resolve({ index, status: 'invalid', detectionTime });
-        }, detector.timeout);
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '视频可以流畅播放'
+          });
+        };
         
-        video.addEventListener('canplay', onSuccess, { once: true });
-        video.addEventListener('loadedmetadata', onSuccess, { once: true });
-        video.addEventListener('error', onError, { once: true });
-        video.addEventListener('stalled', onError, { once: true });
+        // 视频加载错误
+        video.onerror = () => {
+          const detectionTime = Date.now() - startTime;
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'invalid', 
+            detectionTime,
+            reason: '视频加载错误'
+          });
+        };
         
+        // 设置视频源并开始加载
         video.src = utils.cleanUrl(source.url);
+        document.body.appendChild(video); // 添加到DOM以便加载
         video.load();
-        video.play().catch(() => {});
+        
+        // 尝试播放（静音状态下通常会被允许）
+        video.play().catch(() => {
+          // 自动播放被阻止是正常的，不影响检测
+        });
       });
     },
     
