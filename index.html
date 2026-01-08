@@ -37,6 +37,12 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
 .btn.purple{background:#6f42c1}
 .btn.yellow{background:#ffc107;color:#333}
 .btn.gray{background:#6c757d}
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
 .source-list{border:1px solid #ddd;border-radius:6px;padding:10px;max-height:50vh;overflow:auto}
 .source-item{padding:8px;margin-bottom:5px;background:#f8f9fa;border-radius:4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .channel-name{font-weight:bold;color:#333;min-width:120px;flex:1;font-size:clamp(14px, 3.5vw, 18px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -103,6 +109,12 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     border-color:#007bff;
     box-shadow:0 2px 4px rgba(0,123,255,0.3);
 }
+.filter-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
 .source-checkbox{width:22px;height:22px;cursor:pointer;flex-shrink:0}
 .source-checkbox-label{display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0}
 .selected-count{font-size:clamp(13px, 3vw, 16px);color:#007bff;margin-left:12px;font-weight:bold}
@@ -134,6 +146,12 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     transform:translateY(-2px);
 }
 .play-btn.playing{background:#28a745}
+.play-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    background: #6c757d !important;
+}
 .video-preview{
     display: block;
     position: relative;
@@ -355,7 +373,9 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         <p style="font-size:clamp(12px, 2.5vw, 14px);word-break:break-all">http:\/\/ybtvsg.yuanbaotv.com\/api\/zip\/txtzztv\/202511061613\/kds_all_shlt_a160216bf6b3c6054c4a71d40132931c.txt</p>
         <p style="font-size:clamp(12px, 2.5vw, 14px);word-break:break-all">https://gitee.com/messy-in-the-win/tv/raw/master/%E5%90%88%E5%B9%B6%E5%9C%B0%E6%96%B9%E5%8F%B0.txt</p>
         <p>支持.txt/.m3u/.m3u8格式</p>
-        <p><strong>支持格式：</strong>频道名称,URL 或 分组名称,#genre#分组名称</p>
+        <p><strong>支持格式：</strong></p>
+        <p>1. 标准格式：频道名称,URL</p>
+        <p>2. M3U格式：<br>#EXTINF:-1 tvg-name="频道名" group-title="分组",频道名<br>http://example.com/stream.m3u8</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -409,12 +429,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     }
   };
   
-  // 缓存常用函数
-  const cached = {
-    formatTime: null,
-    cleanUrl: null
-  };
-  
   // 获取DOM元素（带缓存）
   const getElement = (id) => {
     if (!DOM_CACHE[id]) {
@@ -439,7 +453,8 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     currentFilter: 'all',
     importData: {
       groupInfo: {},
-      sources: {}
+      sources: {},
+      sourceFormat: {} // 新增：记录每个源的格式类型
     },
     lastUpdateTime: 0,
     updateThrottleTime: 50 // 最小更新间隔50ms
@@ -448,10 +463,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
   // 工具函数
   const utils = {
     cleanUrl: (u) => {
-      if (!cached.cleanUrl) {
-        cached.cleanUrl = (url) => url.replace(/\\\//g, '/');
-      }
-      return cached.cleanUrl(u);
+      return u.replace(/\\\//g, '/');
     },
     
     showStatus: (msg, isError) => {
@@ -488,32 +500,67 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     },
     
     toggleControls: (enable) => {
-      const controls = ['localImportBtn', 'networkImportBtn', 'groupBtn', 'clearBtn'];
+      // 控制所有主要按钮
+      const controls = [
+        'localImportBtn', 'networkImportBtn', 'groupBtn', 'clearBtn',
+        'selectAllGroupsBtn', 'deselectAllGroupsBtn', 'testSelectedGroupsBtn',
+        'closeGroupBtn', 'cancelImportBtn', 'confirmImportBtn',
+        'selectAllValidBtn', 'deselectAllValidBtn', 'exportValidBtn',
+        'closeVideoBtn'
+      ];
+      
       controls.forEach(id => {
         const btn = getElement(id);
         if (btn) btn.disabled = !enable;
       });
       
+      // 控制过滤按钮
       document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.disabled = !enable;
       });
       
-      const actionBtns = ['selectAllValidBtn', 'deselectAllValidBtn', 'exportValidBtn'];
-      actionBtns.forEach(id => {
-        const btn = getElement(id);
-        if (btn) btn.disabled = !enable;
+      // 控制滑块
+      const sliders = ['timeoutSlider', 'delaySlider', 'concurrencySlider'];
+      sliders.forEach(id => {
+        const slider = getElement(id);
+        if (slider) slider.disabled = !enable;
       });
+      
+      // 控制文件输入
+      const fileInput = getElement('fileInput');
+      if (fileInput) {
+        // 文件输入没有disabled属性，但我们可以通过样式和事件来禁用
+        if (!enable) {
+          fileInput.style.pointerEvents = 'none';
+          fileInput.style.opacity = '0.5';
+        } else {
+          fileInput.style.pointerEvents = 'auto';
+          fileInput.style.opacity = '1';
+        }
+      }
+      
+      // 检测按钮特殊处理（在检测中显示停止按钮，保持可用）
+      const testBtn = getElement('testBtn');
+      if (testBtn) {
+        // 检测按钮在检测过程中保持可用（用于停止检测）
+        if (detector.running) {
+          testBtn.disabled = false;
+          testBtn.textContent = '停止检测';
+          testBtn.classList.remove('green');
+          testBtn.classList.add('red');
+        } else {
+          testBtn.disabled = !enable;
+          testBtn.textContent = '开始检测';
+          testBtn.classList.remove('red');
+          testBtn.classList.add('green');
+        }
+      }
     },
     
     formatTime: (ms) => {
-      if (!cached.formatTime) {
-        cached.formatTime = (time) => {
-          if (time < 1000) return `${time}ms`;
-          if (time < 10000) return `${(time/1000).toFixed(2)}s`;
-          return `${(time/1000).toFixed(1)}s`;
-        };
-      }
-      return cached.formatTime(ms);
+      if (ms < 1000) return `${ms}ms`;
+      if (ms < 10000) return `${(ms/1000).toFixed(2)}s`;
+      return `${(ms/1000).toFixed(1)}s`;
     },
     
     updateSelectedCount: () => {
@@ -544,6 +591,11 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
     },
     
     playVideo: (url, channelName) => {
+      if (detector.running) {
+        alert('检测过程中无法播放视频');
+        return;
+      }
+      
       const title = getElement('videoTitle');
       const placeholder = getElement('videoPlaceholder');
       const video = getElement('previewVideo');
@@ -667,7 +719,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       // 使用DocumentFragment批量插入
       scheduleUpdate(() => {
         const fragment = document.createDocumentFragment();
-        const now = Date.now();
         
         filteredData.forEach((i, index) => {
           const div = document.createElement('div');
@@ -693,7 +744,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
                   ${utils.formatTime(i.detectionTime)}
                 </div>` : ''}
             </div>
-            <button class="play-btn" data-url="${i.url}" data-name="${i.name || i.group}">播放</button>
+            <button class="play-btn" data-url="${i.url}" data-name="${i.name || i.group}" ${detector.running ? 'disabled' : ''}>播放</button>
           `;
           fragment.appendChild(div);
         });
@@ -745,6 +796,45 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       core.updateGroupCheckboxes();
     },
     
+    // 解析EXTINF格式
+    parseExtinfLine: (line) => {
+      // 示例: #EXTINF:-1 tvg-name="Clarity 4K" tvg-logo="https://i.imgur.com/M87kbVk.png" group-title="4K超清",Clarity 4K
+      const result = {
+        duration: -1,
+        tvgName: '',
+        tvgLogo: '',
+        groupTitle: '',
+        channelName: '',
+        attributes: {}
+      };
+      
+      // 提取属性和频道名称
+      const match = line.match(/^#EXTINF:([-0-9.]+)(?:\s+(.*))?,(.*)$/);
+      if (!match) return null;
+      
+      result.duration = parseFloat(match[1]);
+      result.channelName = match[3].trim();
+      
+      // 解析属性
+      const attrString = match[2];
+      if (attrString) {
+        // 匹配属性，如 tvg-name="Clarity 4K"
+        const attrRegex = /(\S+)=["']([^"']*)["']/g;
+        let attrMatch;
+        while ((attrMatch = attrRegex.exec(attrString)) !== null) {
+          const key = attrMatch[1];
+          const value = attrMatch[2];
+          result.attributes[key] = value;
+          
+          if (key === 'tvg-name') result.tvgName = value;
+          if (key === 'tvg-logo') result.tvgLogo = value;
+          if (key === 'group-title') result.groupTitle = value;
+        }
+      }
+      
+      return result;
+    },
+    
     extractUrls: (t) => {
       const result = [];
       let currentGroup = '默认分组';
@@ -753,72 +843,142 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       
       state.importData = {
         groupInfo: {},
-        sources: {}
+        sources: {},
+        sourceFormat: {}
       };
       
-      // 第一遍：收集分组信息
-      for (let line of lines) {
-        const originalLine = line;
-        line = line.trim();
-        if (!line) continue;
-        
-        if (line.includes(',#genre#')) {
-          const match = line.match(/^(.*),#genre#(.*)$/);
-          if (match) {
-            currentGroup = (match[2] || match[1]).trim();
-            state.importData.groupInfo[currentGroup] = originalLine;
-          }
-        }
-      }
+      // 判断是否为M3U格式（包含#EXTINF行）
+      const isM3UFormat = lines.some(line => line.trim().startsWith('#EXTINF'));
       
-      currentGroup = '默认分组';
-      
-      // 第二遍：提取URL
-      for (let line of lines) {
-        const originalLine = line;
-        line = line.trim();
-        if (!line) continue;
+      if (isM3UFormat) {
+        // M3U格式解析
+        let extinfLine = '';
         
-        if (line.includes(',#genre#')) {
-          const match = line.match(/^(.*),#genre#(.*)$/);
-          if (match) {
-            currentGroup = (match[2] || match[1]).trim();
-          }
-          continue;
-        }
-        
-        if (line.startsWith('#') || line.startsWith('//')) continue;
-        
-        const commaIndex = line.indexOf(',');
-        let channelName = currentGroup;
-        let urlPart = line;
-        
-        if (commaIndex !== -1) {
-          channelName = line.substring(0, commaIndex).trim();
-          urlPart = line.substring(commaIndex + 1).trim();
-        }
-        
-        const matches = urlPart.match(/(https?:\/\/[^\s<>"']+)/gi);
-        if (matches) {
-          for (let u of matches) {
-            u = u.replace(/[\s,;'"`]+$/, '');
-            if (u.length > 10 && !urlSet.has(u)) {
-              urlSet.add(u);
-              const item = { 
-                name: channelName,
-                url: u, 
-                group: currentGroup, 
-                status: 'unknown',
-                detectionTime: 0,
-                selected: false
-              };
-              result.push(item);
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          if (line.startsWith('#EXTINF')) {
+            extinfLine = line;
+          } else if (line.startsWith('#') && !line.startsWith('#EXTINF')) {
+            // 其他M3U注释行，跳过
+            continue;
+          } else if (extinfLine && (line.startsWith('http://') || line.startsWith('https://'))) {
+            // 找到URL行
+            const url = line.trim();
+            
+            if (!urlSet.has(url)) {
+              urlSet.add(url);
               
-              state.importData.sources[u] = {
-                originalLine: originalLine,
-                group: currentGroup,
-                name: channelName
-              };
+              // 解析EXTINF行
+              const extinfData = core.parseExtinfLine(extinfLine);
+              if (extinfData) {
+                const channelName = extinfData.channelName || extinfData.tvgName || '未命名';
+                const group = extinfData.groupTitle || '默认分组';
+                
+                const item = { 
+                  name: channelName,
+                  url: url, 
+                  group: group, 
+                  status: 'unknown',
+                  detectionTime: 0,
+                  selected: false
+                };
+                result.push(item);
+                
+                state.importData.sources[url] = {
+                  originalLine: extinfLine + '\n' + line,
+                  group: group,
+                  name: channelName,
+                  format: 'm3u',
+                  extinfData: extinfData
+                };
+                
+                // 记录分组信息
+                if (group !== '默认分组' && !state.importData.groupInfo[group]) {
+                  state.importData.groupInfo[group] = `${group},#genre#${group}`;
+                }
+              }
+            }
+            
+            // 重置EXTINF行
+            extinfLine = '';
+          } else if (line.includes(',#genre#')) {
+            // M3U中的分组行
+            const match = line.match(/^(.*),#genre#(.*)$/);
+            if (match) {
+              currentGroup = (match[2] || match[1]).trim();
+              state.importData.groupInfo[currentGroup] = line;
+            }
+          }
+        }
+      } else {
+        // 原始格式解析
+        // 第一遍：收集分组信息
+        for (let line of lines) {
+          const originalLine = line;
+          line = line.trim();
+          if (!line) continue;
+          
+          if (line.includes(',#genre#')) {
+            const match = line.match(/^(.*),#genre#(.*)$/);
+            if (match) {
+              currentGroup = (match[2] || match[1]).trim();
+              state.importData.groupInfo[currentGroup] = originalLine;
+            }
+          }
+        }
+        
+        currentGroup = '默认分组';
+        
+        // 第二遍：提取URL
+        for (let line of lines) {
+          const originalLine = line;
+          line = line.trim();
+          if (!line) continue;
+          
+          if (line.includes(',#genre#')) {
+            const match = line.match(/^(.*),#genre#(.*)$/);
+            if (match) {
+              currentGroup = (match[2] || match[1]).trim();
+            }
+            continue;
+          }
+          
+          if (line.startsWith('#') || line.startsWith('//')) continue;
+          
+          const commaIndex = line.indexOf(',');
+          let channelName = currentGroup;
+          let urlPart = line;
+          
+          if (commaIndex !== -1) {
+            channelName = line.substring(0, commaIndex).trim();
+            urlPart = line.substring(commaIndex + 1).trim();
+          }
+          
+          const matches = urlPart.match(/(https?:\/\/[^\s<>"']+)/gi);
+          if (matches) {
+            for (let u of matches) {
+              u = u.replace(/[\s,;'"`]+$/, '');
+              if (u.length > 10 && !urlSet.has(u)) {
+                urlSet.add(u);
+                const item = { 
+                  name: channelName,
+                  url: u, 
+                  group: currentGroup, 
+                  status: 'unknown',
+                  detectionTime: 0,
+                  selected: false
+                };
+                result.push(item);
+                
+                state.importData.sources[u] = {
+                  originalLine: originalLine,
+                  group: currentGroup,
+                  name: channelName,
+                  format: 'standard'
+                };
+              }
             }
           }
         }
@@ -878,6 +1038,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       const lines = [];
       const groupsMap = new Map();
       
+      // 按分组组织数据
       selectedItems.forEach(item => {
         const url = item.url;
         const group = item.group;
@@ -886,38 +1047,85 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           groupsMap.set(group, []);
         }
         
-        if (state.importData.sources[url]) {
-          groupsMap.get(group).push(state.importData.sources[url].originalLine);
-        } else {
-          groupsMap.get(group).push(`${item.name || item.group},${item.url}`);
-        }
+        groupsMap.get(group).push(item);
       });
       
-      const allGroups = Array.from(groupsMap.keys());
+      // 判断是否包含M3U格式
+      const hasM3UFormat = selectedItems.some(item => {
+        const sourceInfo = state.importData.sources[item.url];
+        return sourceInfo && sourceInfo.format === 'm3u';
+      });
       
-      allGroups.forEach(group => {
-        if (state.importData.groupInfo[group]) {
-          lines.push(state.importData.groupInfo[group]);
-        } else if (group !== '默认分组') {
-          lines.push(`${group},#genre#${group}`);
-        }
+      // 如果包含M3U格式，按M3U格式导出
+      if (hasM3UFormat) {
+        // 添加M3U头
+        lines.push('#EXTM3U');
         
-        const channels = groupsMap.get(group);
-        channels.forEach(channel => {
-          lines.push(channel);
+        // 按分组导出M3U格式
+        const allGroups = Array.from(groupsMap.keys());
+        
+        allGroups.forEach(group => {
+          // 如果有分组信息，添加注释分组行（可选）
+          if (group !== '默认分组') {
+            lines.push(`# 分组: ${group}`);
+          }
+          
+          const channels = groupsMap.get(group);
+          channels.forEach(item => {
+            const sourceInfo = state.importData.sources[item.url];
+            if (sourceInfo) {
+              if (sourceInfo.format === 'm3u') {
+                // 直接使用原始M3U行
+                lines.push(sourceInfo.originalLine);
+              } else {
+                // 标准格式转换为M3U格式
+                const tvgName = item.name.replace(/"/g, '');
+                const groupTitle = item.group.replace(/"/g, '');
+                lines.push(`#EXTINF:-1 tvg-name="${tvgName}" group-title="${groupTitle}",${item.name}`);
+                lines.push(item.url);
+              }
+            } else {
+              // 如果没有原始信息，生成基本的M3U格式
+              const tvgName = item.name.replace(/"/g, '');
+              const groupTitle = item.group.replace(/"/g, '');
+              lines.push(`#EXTINF:-1 tvg-name="${tvgName}" group-title="${groupTitle}",${item.name}`);
+              lines.push(item.url);
+            }
+          });
         });
-      });
+      } else {
+        // 标准格式导出
+        const allGroups = Array.from(groupsMap.keys());
+        
+        allGroups.forEach(group => {
+          if (state.importData.groupInfo[group]) {
+            lines.push(state.importData.groupInfo[group]);
+          } else if (group !== '默认分组') {
+            lines.push(`${group},#genre#${group}`);
+          }
+          
+          const channels = groupsMap.get(group);
+          channels.forEach(item => {
+            const sourceInfo = state.importData.sources[item.url];
+            if (sourceInfo) {
+              lines.push(sourceInfo.originalLine);
+            } else {
+              lines.push(`${item.name || item.group},${item.url}`);
+            }
+          });
+        });
+      }
       
       return lines.join('\n');
     }
   };
   
-  // 检测器 - 使用修改后的检测方法
+  // 检测器
   const detector = {
     queue: [],
     workers: [],
     timeout: 5000,
-    delay: 200,  // 默认值已通过HTML设置，这里会在init中读取
+    delay: 200,
     concurrency: 10,
     running: false,
     
@@ -955,14 +1163,14 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       detector.concurrency = parseInt(concurrencySlider?.value || 10);
     },
     
-    // 修改后的检测方法 - 使用video元素检测直播源
+    // 检测方法
     testSource: (source, index) => {
       return new Promise((resolve) => {
-        const timeout = detector.timeout; // 使用当前设置的超时时间
+        const timeout = detector.timeout;
         const video = document.createElement('video');
-        video.muted = true; // 静音避免声音干扰
-        video.preload = 'auto'; // 预加载
-        video.style.display = 'none'; // 隐藏视频元素
+        video.muted = true;
+        video.preload = 'auto';
+        video.style.display = 'none';
         
         let timer = setTimeout(() => {
           cleanup();
@@ -974,7 +1182,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           });
         }, timeout);
         
-        // 记录开始时间
         const startTime = Date.now();
         
         function cleanup() {
@@ -986,7 +1193,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           }
         }
         
-        // 成功加载视频数据
         video.onloadeddata = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
@@ -998,7 +1204,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           });
         };
         
-        // 视频可以播放
         video.oncanplay = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
@@ -1010,7 +1215,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           });
         };
         
-        // 视频可以流畅播放
         video.oncanplaythrough = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
@@ -1022,7 +1226,6 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           });
         };
         
-        // 视频加载错误
         video.onerror = () => {
           const detectionTime = Date.now() - startTime;
           cleanup();
@@ -1034,12 +1237,10 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
           });
         };
         
-        // 设置视频源并开始加载
         video.src = utils.cleanUrl(source.url);
-        document.body.appendChild(video); // 添加到DOM以便加载
+        document.body.appendChild(video);
         video.load();
         
-        // 尝试播放（静音状态下通常会被允许）
         video.play().catch(() => {
           // 自动播放被阻止是正常的，不影响检测
         });
@@ -1135,6 +1336,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         if (avgTimeEl) avgTimeEl.textContent = '0ms';
       });
       
+      // 禁用所有其他按钮，只保留检测按钮（停止按钮）可用
       utils.toggleControls(false);
       
       const testBtn = getElement('testBtn');
@@ -1143,6 +1345,15 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         testBtn.classList.remove('green');
         testBtn.classList.add('red');
       }
+      
+      // 关闭所有模态框
+      const modals = ['networkModal', 'groupModal'];
+      modals.forEach(modalId => {
+        const modal = getElement(modalId);
+        if (modal && modal.style.display === 'block') {
+          modal.style.display = 'none';
+        }
+      });
       
       detector.queue = state.data.map((source, index) => ({ source, index }));
       
@@ -1167,6 +1378,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
       detector.queue = [];
       detector.workers = [];
       
+      // 重新启用所有按钮
       utils.toggleControls(true);
       
       const testBtn = getElement('testBtn');
@@ -1200,6 +1412,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         
         // 播放按钮
         if (target.classList.contains('play-btn')) {
+          if (target.disabled) return;
           const url = target.getAttribute('data-url');
           const name = target.getAttribute('data-name');
           if (url) utils.playVideo(url, name);
@@ -1208,7 +1421,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         
         // 复选框
         if (target.classList.contains('source-checkbox')) {
-          if (detector.running) return;
+          if (detector.running || target.disabled) return;
           const sourceItem = target.closest('.source-item');
           if (sourceItem) {
             const index = parseInt(sourceItem.getAttribute('data-index'));
@@ -1236,7 +1449,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         
         // 过滤按钮
         if (target.classList.contains('filter-btn')) {
-          if (detector.running) return;
+          if (detector.running || target.disabled) return;
           const filter = target.getAttribute('data-filter');
           if (filter) {
             state.currentFilter = filter;
@@ -1269,7 +1482,7 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         if (state.data.length && confirm('清空所有直播源？')) {
           state.data = [];
           state.selectedGroups = [];
-          state.importData = { groupInfo: {}, sources: {} };
+          state.importData = { groupInfo: {}, sources: {}, sourceFormat: {} };
           detector.stop();
           utils.stopVideo();
           core.update();
@@ -1501,13 +1714,20 @@ body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = '有效直播源.txt';
+        
+        // 根据格式选择文件名
+        const hasM3UFormat = selectedItems.some(item => {
+          const sourceInfo = state.importData.sources[item.url];
+          return sourceInfo && sourceInfo.format === 'm3u';
+        });
+        
+        a.download = hasM3UFormat ? '有效直播源.m3u' : '有效直播源.txt';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        alert(`成功导出${selectedItems.length}个有效直播源`);
+        alert(`成功导出${selectedItems.length}个有效直播源（${hasM3UFormat ? 'M3U格式' : '标准格式'}）`);
       });
       
       bindButton('closeVideoBtn', () => {
