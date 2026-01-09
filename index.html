@@ -203,8 +203,8 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       
       <div class="control-row">
         <span class="control-label">检测间隔(毫秒):</span>
-        <input type="range" class="control-slider" id="delaySlider" min="10" max="1000" value="30">
-        <span class="control-value" id="delayValue">30ms</span>
+        <input type="range" class="control-slider" id="delaySlider" min="10" max="1000" value="200">
+        <span class="control-value" id="delayValue">200ms</span>
       </div>
       
       <div class="control-row">
@@ -323,182 +323,215 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" style="display:none">
 
 <script>
-let data = [], selectedGroups = [], allGroups = [];
-let detectionStats = { 
-  processed: 0, 
-  valid: 0, 
-  invalid: 0, 
-  startTime: 0,
-  totalTime: 0
-};
-let currentFilter = 'all'; // 当前列表过滤状态
-let selectedUrls = new Set(); // 存储勾选的URL（只对有效项）
-let currentVideoUrl = ''; // 当前播放的视频URL
-let videoElement = null; // 视频元素
-
-const el = {
-  totalCount: document.getElementById('totalCount'),
-  sourceCount: document.getElementById('sourceCount'),
-  uniqueCount: document.getElementById('uniqueCount'),
-  groupCount: document.getElementById('groupCount'),
-  validCount: document.getElementById('validCount'),
-  invalidCount: document.getElementById('invalidCount'),
-  sourceList: document.getElementById('sourceList'),
-  groupCheckboxes: document.getElementById('groupCheckboxes'),
-  networkUrl: document.getElementById('networkUrl'),
-  networkStatus: document.getElementById('networkStatus'),
-  fileInput: document.getElementById('fileInput'),
-  modal: document.getElementById('networkModal'),
-  groupModal: document.getElementById('groupModal'),
-  testBtn: document.getElementById('testBtn'),
-  timeoutSlider: document.getElementById('timeoutSlider'),
-  delaySlider: document.getElementById('delaySlider'),
-  concurrencySlider: document.getElementById('concurrencySlider'),
-  timeoutValue: document.getElementById('timeoutValue'),
-  delayValue: document.getElementById('delayValue'),
-  concurrencyValue: document.getElementById('concurrencyValue'),
-  progressFill: document.getElementById('progressFill'),
-  processedCount: document.getElementById('processedCount'),
-  validDetectedCount: document.getElementById('validDetectedCount'),
-  invalidDetectedCount: document.getElementById('invalidDetectedCount'),
-  speedValue: document.getElementById('speedValue'),
-  avgTimeValue: document.getElementById('avgTimeValue'),
-  countAll: document.getElementById('countAll'),
-  countValid: document.getElementById('countValid'),
-  countInvalid: document.getElementById('countInvalid'),
-  listTabs: document.getElementById('listTabs'),
-  selectAllBtn: document.getElementById('selectAllBtn'),
-  deselectAllBtn: document.getElementById('deselectAllBtn'),
-  exportSelectedBtn: document.getElementById('exportSelectedBtn'),
-  videoPreviewContainer: document.getElementById('videoPreviewContainer'),
-  previewVideo: document.getElementById('previewVideo'),
-  currentChannelName: document.getElementById('currentChannelName'),
-  closePreviewBtn: document.getElementById('closePreviewBtn')
-};
-
-const utils = {
-  cleanUrl: u => u.replace(/\\\//g, '/'),
+// 使用立即执行函数封装，避免全局变量污染
+(function() {
+  // 数据状态
+  const state = {
+    data: [],
+    selectedGroups: [],
+    allGroups: [],
+    isDetecting: false,
+    detectionStats: { 
+      processed: 0, 
+      valid: 0, 
+      invalid: 0, 
+      startTime: 0,
+      totalTime: 0
+    },
+    currentFilter: 'all',
+    importData: {
+      groupInfo: {},
+      sources: {}
+    },
+    selectedUrls: new Set(), // 存储勾选的URL
+    currentVideoUrl: '' // 当前播放的视频URL
+  };
   
-  showStatus: (msg, isError, element = el.networkStatus) => {
-    element.textContent = msg;
-    element.className = `status ${isError ? 'error' : 'success'}`;
-    element.style.display = msg ? 'block' : 'none';
-  },
+  // DOM元素引用
+  const el = {
+    totalCount: document.getElementById('totalCount'),
+    sourceCount: document.getElementById('sourceCount'),
+    uniqueCount: document.getElementById('uniqueCount'),
+    groupCount: document.getElementById('groupCount'),
+    validCount: document.getElementById('validCount'),
+    invalidCount: document.getElementById('invalidCount'),
+    sourceList: document.getElementById('sourceList'),
+    groupCheckboxes: document.getElementById('groupCheckboxes'),
+    networkUrl: document.getElementById('networkUrl'),
+    networkStatus: document.getElementById('networkStatus'),
+    fileInput: document.getElementById('fileInput'),
+    modal: document.getElementById('networkModal'),
+    groupModal: document.getElementById('groupModal'),
+    testBtn: document.getElementById('testBtn'),
+    timeoutSlider: document.getElementById('timeoutSlider'),
+    delaySlider: document.getElementById('delaySlider'),
+    concurrencySlider: document.getElementById('concurrencySlider'),
+    timeoutValue: document.getElementById('timeoutValue'),
+    delayValue: document.getElementById('delayValue'),
+    concurrencyValue: document.getElementById('concurrencyValue'),
+    progressFill: document.getElementById('progressFill'),
+    processedCount: document.getElementById('processedCount'),
+    validDetectedCount: document.getElementById('validDetectedCount'),
+    invalidDetectedCount: document.getElementById('invalidDetectedCount'),
+    speedValue: document.getElementById('speedValue'),
+    avgTimeValue: document.getElementById('avgTimeValue'),
+    countAll: document.getElementById('countAll'),
+    countValid: document.getElementById('countValid'),
+    countInvalid: document.getElementById('countInvalid'),
+    listTabs: document.getElementById('listTabs'),
+    selectAllBtn: document.getElementById('selectAllBtn'),
+    deselectAllBtn: document.getElementById('deselectAllBtn'),
+    exportSelectedBtn: document.getElementById('exportSelectedBtn'),
+    videoPreviewContainer: document.getElementById('videoPreviewContainer'),
+    previewVideo: document.getElementById('previewVideo'),
+    currentChannelName: document.getElementById('currentChannelName'),
+    closePreviewBtn: document.getElementById('closePreviewBtn')
+  };
   
-  fetchUrl: async u => {
-    const cleaned = utils.cleanUrl(u);
-    const proxies = [
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(cleaned)}`,
-      `https://corsproxy.io/?${encodeURIComponent(cleaned)}`,
-      cleaned
-    ];
+  // 工具函数
+  const utils = {
+    cleanUrl: u => u.replace(/\\\//g, '/'),
     
-    for (let p of proxies) {
-      try {
-        const c = new AbortController();
-        setTimeout(() => c.abort(), 10000);
-        const r = await fetch(p, { signal: c.signal, headers: { 'User-Agent': 'Mozilla/5.0' } });
-        if (r.ok) return await r.text();
-      } catch (e) {}
-    }
-    throw new Error('所有代理均失败');
-  },
-  
-  toggleControls: (enable) => {
-    const controls = ['localImportBtn', 'networkImportBtn', 'groupBtn', 'clearBtn'];
-    controls.forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.disabled = !enable;
-    });
-  },
-  
-  formatTime: (ms) => {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 10000) return `${(ms/1000).toFixed(2)}s`;
-    return `${(ms/1000).toFixed(1)}s`;
-  },
-  
-  // 导出文件
-  exportToFile: (content, filename) => {
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  },
-  
-  // 生成简单的ID
-  generateId: (name) => {
-    return name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  }
-};
-
-const videoPlayer = {
-  // 初始化视频元素
-  init: () => {
-    videoElement = el.previewVideo;
+    showStatus: (msg, isError, element = el.networkStatus) => {
+      element.textContent = msg;
+      element.className = `status ${isError ? 'error' : 'success'}`;
+      element.style.display = msg ? 'block' : 'none';
+    },
     
-    // 视频加载错误处理
-    videoElement.addEventListener('error', (e) => {
-      console.error('视频加载错误:', e);
-      alert('无法播放此视频源，可能链接已失效或格式不支持');
-    });
-    
-    // 视频元数据加载完成时调整尺寸
-    videoElement.addEventListener('loadedmetadata', () => {
-      videoPlayer.adjustVideoSize();
-    });
-    
-    // 窗口大小改变时调整视频尺寸
-    window.addEventListener('resize', () => {
-      if (currentVideoUrl) {
-        videoPlayer.adjustVideoSize();
+    fetchUrl: async u => {
+      const cleaned = utils.cleanUrl(u);
+      const proxies = [
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(cleaned)}`,
+        `https://corsproxy.io/?${encodeURIComponent(cleaned)}`,
+        cleaned
+      ];
+      
+      for (let p of proxies) {
+        try {
+          const c = new AbortController();
+          setTimeout(() => c.abort(), 10000);
+          const r = await fetch(p, { signal: c.signal, headers: { 'User-Agent': 'Mozilla/5.0' } });
+          if (r.ok) return await r.text();
+        } catch (e) {}
       }
-    });
+      throw new Error('所有代理均失败');
+    },
     
-    // 关闭预览按钮事件
-    el.closePreviewBtn.onclick = () => {
-      videoPlayer.stop();
-    };
-  },
+    toggleControls: (enable) => {
+      const controls = ['localImportBtn', 'networkImportBtn', 'groupBtn', 'clearBtn'];
+      controls.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !enable;
+      });
+      
+      document.querySelectorAll('.list-tab').forEach(btn => {
+        btn.disabled = !enable;
+      });
+      
+      const actionBtns = ['selectAllBtn', 'deselectAllBtn', 'exportSelectedBtn'];
+      actionBtns.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !enable;
+      });
+    },
+    
+    formatTime: (ms) => {
+      if (ms < 1000) return `${ms}ms`;
+      if (ms < 10000) return `${(ms/1000).toFixed(2)}s`;
+      return `${(ms/1000).toFixed(1)}s`;
+    },
+    
+    // 导出文件
+    exportToFile: (content, filename) => {
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    
+    // 生成简单的ID
+    generateId: (name) => {
+      return name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+  };
   
-  // 调整视频尺寸
-  adjustVideoSize: () => {
-    if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
-      const videoWidth = videoElement.videoWidth;
-      const videoHeight = videoElement.videoHeight;
+  // 视频播放器
+  const videoPlayer = {
+    // 初始化视频元素
+    init: () => {
+      const videoElement = el.previewVideo;
+      
+      if (!videoElement) return;
+      
+      // 视频加载错误处理
+      videoElement.addEventListener('error', (e) => {
+        console.error('视频加载错误:', e);
+        alert('无法播放此视频源，可能链接已失效或格式不支持');
+      });
+      
+      // 视频元数据加载完成时调整尺寸
+      videoElement.addEventListener('loadedmetadata', () => {
+        videoPlayer.adjustVideoSize();
+      });
+      
+      // 窗口大小改变时调整视频尺寸
+      window.addEventListener('resize', () => {
+        if (state.currentVideoUrl) {
+          videoPlayer.adjustVideoSize();
+        }
+      });
+      
+      // 关闭预览按钮事件
+      el.closePreviewBtn.onclick = () => {
+        videoPlayer.stop();
+      };
+    },
+    
+    // 调整视频尺寸
+    adjustVideoSize: () => {
+      const videoElement = el.previewVideo;
       const container = el.videoPreview;
       
-      // 计算最大可用高度
-      const maxHeight = Math.min(window.innerHeight * 0.6, 800); // 最大为视口的60%或800px
-      const maxWidth = container.clientWidth;
+      if (!videoElement || !container) return;
       
-      // 计算保持原始宽高比的最佳尺寸
-      let width = maxWidth;
-      let height = (width / videoWidth) * videoHeight;
-      
-      // 如果高度超过最大高度，则重新计算
-      if (height > maxHeight) {
-        height = maxHeight;
-        width = (height / videoHeight) * videoWidth;
+      if (videoElement.videoWidth && videoElement.videoHeight) {
+        const videoWidth = videoElement.videoWidth;
+        const videoHeight = videoElement.videoHeight;
+        
+        // 计算最大可用高度
+        const maxHeight = Math.min(window.innerHeight * 0.6, 800); // 最大为视口的60%或800px
+        const maxWidth = container.clientWidth;
+        
+        // 计算保持原始宽高比的最佳尺寸
+        let width = maxWidth;
+        let height = (width / videoWidth) * videoHeight;
+        
+        // 如果高度超过最大高度，则重新计算
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = (height / videoHeight) * videoWidth;
+        }
+        
+        // 确保高度不低于最小值
+        height = Math.max(height, 180);
+        
+        // 设置视频尺寸
+        videoElement.style.width = width + 'px';
+        videoElement.style.height = height + 'px';
       }
+    },
+    
+    // 播放视频
+    play: (url, channelName) => {
+      const videoElement = el.previewVideo;
       
-      // 确保高度不低于最小值
-      height = Math.max(height, 180);
+      if (!videoElement) return;
       
-      // 设置视频尺寸
-      videoElement.style.width = width + 'px';
-      videoElement.style.height = height + 'px';
-    }
-  },
-  
-  // 播放视频
-  play: (url, channelName) => {
-    if (videoElement) {
       // 先停止当前播放
       videoPlayer.stop();
       
@@ -510,7 +543,7 @@ const videoPlayer = {
       
       // 设置视频源
       videoElement.src = utils.cleanUrl(url);
-      currentVideoUrl = url;
+      state.currentVideoUrl = url;
       
       // 重置视频尺寸
       videoElement.style.width = '';
@@ -522,933 +555,988 @@ const videoPlayer = {
         console.error('播放失败:', e);
         alert('无法播放此视频源，可能链接已失效或格式不支持');
       });
-    }
-  },
-  
-  // 停止播放
-  stop: () => {
-    if (videoElement) {
-      videoElement.pause();
-      videoElement.src = '';
-      currentVideoUrl = '';
-      el.videoPreviewContainer.style.display = 'none';
-    }
-  },
-  
-  // 检查是否正在播放
-  isPlaying: () => {
-    return currentVideoUrl !== '';
-  }
-};
-
-const core = {
-  // 根据当前过滤器获取要显示的数据
-  getFilteredData: () => {
-    switch(currentFilter) {
-      case 'valid':
-        return data.filter(i => i.status === 'valid');
-      case 'invalid':
-        return data.filter(i => i.status === 'invalid');
-      default: // 'all'
-        return data;
-    }
-  },
-  
-  update: () => {
-    const count = data.length;
-    const unique = new Set(data.map(i => i.url)).size;
-    const valid = data.filter(i => i.status === 'valid').length;
-    const invalid = data.filter(i => i.status === 'invalid').length;
-    const unknown = data.filter(i => i.status === 'unknown').length;
+    },
     
-    const groupsSet = new Set();
-    
-    data.forEach(i => {
-      groupsSet.add(i.group);
-    });
-    
-    allGroups = Array.from(groupsSet);
-    
-    el.sourceCount.textContent = count + '个直播源';
-    el.uniqueCount.textContent = unique + '个唯一源';
-    el.totalCount.textContent = count;
-    el.groupCount.textContent = allGroups.length;
-    el.validCount.textContent = valid + '个有效';
-    el.invalidCount.textContent = invalid + '个失效';
-    
-    // 更新选项卡计数
-    el.countAll.textContent = count;
-    el.countValid.textContent = valid;
-    el.countInvalid.textContent = invalid;
-    
-    // 获取过滤后的数据
-    const filteredData = core.getFilteredData();
-    
-    if (filteredData.length === 0) {
-      let message = '暂无直播源';
-      if (data.length > 0) {
-        switch(currentFilter) {
-          case 'valid':
-            message = '暂无有效的直播源';
-            break;
-          case 'invalid':
-            message = '暂无无效的直播源';
-            break;
-        }
-      } else {
-        message = '暂无直播源，请使用上方导入功能';
+    // 停止播放
+    stop: () => {
+      const videoElement = el.previewVideo;
+      
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.src = '';
+        state.currentVideoUrl = '';
+        el.videoPreviewContainer.style.display = 'none';
       }
-      el.sourceList.innerHTML = `<div class="empty-list">${message}</div>`;
-    } else {
-      const fragment = document.createDocumentFragment();
-      filteredData.forEach((i, k) => {
-        const div = document.createElement('div');
-        div.className = 'source-item';
+    },
+    
+    // 检查是否正在播放
+    isPlaying: () => {
+      return state.currentVideoUrl !== '';
+    }
+  };
+  
+  // 核心功能
+  const core = {
+    // 根据当前过滤器获取要显示的数据
+    getFilteredData: () => {
+      switch(state.currentFilter) {
+        case 'valid':
+          return state.data.filter(i => i.status === 'valid');
+        case 'invalid':
+          return state.data.filter(i => i.status === 'invalid');
+        default: // 'all'
+          return state.data;
+      }
+    },
+    
+    update: () => {
+      const count = state.data.length;
+      const unique = new Set(state.data.map(i => i.url)).size;
+      const valid = state.data.filter(i => i.status === 'valid').length;
+      const invalid = state.data.filter(i => i.status === 'invalid').length;
+      
+      const groupsSet = new Set();
+      
+      state.data.forEach(i => {
+        groupsSet.add(i.group);
+      });
+      
+      state.allGroups = Array.from(groupsSet);
+      
+      el.sourceCount.textContent = count + '个直播源';
+      el.uniqueCount.textContent = unique + '个唯一源';
+      el.totalCount.textContent = count;
+      el.groupCount.textContent = state.allGroups.length;
+      el.validCount.textContent = valid + '个有效';
+      el.invalidCount.textContent = invalid + '个失效';
+      
+      // 更新选项卡计数
+      el.countAll.textContent = count;
+      el.countValid.textContent = valid;
+      el.countInvalid.textContent = invalid;
+      
+      // 获取过滤后的数据
+      const filteredData = core.getFilteredData();
+      
+      if (filteredData.length === 0) {
+        let message = '暂无直播源';
+        if (state.data.length > 0) {
+          switch(state.currentFilter) {
+            case 'valid':
+              message = '暂无有效的直播源';
+              break;
+            case 'invalid':
+              message = '暂无无效的直播源';
+              break;
+          }
+        } else {
+          message = '暂无直播源，请使用上方导入功能';
+        }
+        el.sourceList.innerHTML = `<div class="empty-list">${message}</div>`;
+      } else {
+        const fragment = document.createDocumentFragment();
+        filteredData.forEach((i, k) => {
+          const div = document.createElement('div');
+          div.className = 'source-item';
+          
+          // 只在有效项显示勾选框
+          const checkboxHtml = i.status === 'valid' 
+            ? `<input type="checkbox" class="source-checkbox" data-url="${i.url}" ${state.selectedUrls.has(i.url) ? 'checked' : ''} ${detector.running ? 'disabled' : ''}>`
+            : '<div style="width:16px"></div>'; // 占位符，保持对齐
         
-        // 只在有效项显示勾选框
-        const checkboxHtml = i.status === 'valid' 
-          ? `<input type="checkbox" class="source-checkbox" data-url="${i.url}" ${selectedUrls.has(i.url) ? 'checked' : ''}>`
-          : '<div style="width:16px"></div>'; // 占位符，保持对齐
-        
-        // 播放按钮 - 只在有效和未检测项显示，无效项禁用
-        const isPlayable = i.status !== 'invalid';
-        const playBtnHtml = `<button class="play-btn" data-url="${i.url}" ${!isPlayable ? 'disabled' : ''}>播放</button>`;
-        
-        div.innerHTML = `
-          ${checkboxHtml}
-          <div class="channel-name" title="${i.channelName || i.group}">${i.channelName || i.group}</div>
-          <div class="source-url">${i.url}</div>
-          <div class="status-container">
-            <div class="status-badge status-${i.status}">
-              ${i.status === 'valid' ? '有效' : i.status === 'invalid' ? '失效' : '未检'}
+          // 播放按钮 - 只在有效和未检测项显示，无效项禁用
+          const isPlayable = i.status !== 'invalid';
+          const playBtnHtml = `<button class="play-btn" data-url="${i.url}" ${!isPlayable ? 'disabled' : ''}>播放</button>`;
+          
+          div.innerHTML = `
+            ${checkboxHtml}
+            <div class="channel-name" title="${i.channelName || i.group}">${i.channelName || i.group}</div>
+            <div class="source-url">${i.url}</div>
+            <div class="status-container">
+              <div class="status-badge status-${i.status}">
+                ${i.status === 'valid' ? '有效' : i.status === 'invalid' ? '失效' : '未检'}
+              </div>
+              ${i.detectionTime ? `
+                <div class="detection-time ${i.status}">
+                  ${utils.formatTime(i.detectionTime)}
+                </div>` : ''}
             </div>
-            ${i.detectionTime ? `
-              <div class="detection-time ${i.status}">
-                ${utils.formatTime(i.detectionTime)}
-              </div>` : ''}
-          </div>
-          ${playBtnHtml}
+            ${playBtnHtml}
+          `;
+          fragment.appendChild(div);
+        });
+        el.sourceList.innerHTML = '';
+        el.sourceList.appendChild(fragment);
+      }
+      core.updateGroupCheckboxes();
+    },
+    
+    updateGroupCheckboxes: () => {
+      const fragment = document.createDocumentFragment();
+      const groupCountMap = new Map();
+      
+      state.data.forEach(i => {
+        groupCountMap.set(i.group, (groupCountMap.get(i.group) || 0) + 1);
+      });
+      
+      state.allGroups.forEach(g => {
+        const count = groupCountMap.get(g) || 0;
+        const selected = state.selectedGroups.includes(g);
+        const div = document.createElement('div');
+        div.className = `group-item ${selected ? 'selected' : ''}`;
+        div.setAttribute('data-group', g);
+        div.innerHTML = `
+          <input type="checkbox" class="group-checkbox" ${selected ? 'checked' : ''} ${detector.running ? 'disabled' : ''}>
+          <div class="group-name">${g}</div>
+          <div class="group-count">${count}个源</div>
         `;
         fragment.appendChild(div);
       });
-      el.sourceList.innerHTML = '';
-      el.sourceList.appendChild(fragment);
-    }
-    core.updateGroupCheckboxes();
-  },
-  
-  updateGroupCheckboxes: () => {
-    const fragment = document.createDocumentFragment();
-    const groupCountMap = new Map();
-    
-    data.forEach(i => {
-      groupCountMap.set(i.group, (groupCountMap.get(i.group) || 0) + 1);
-    });
-    
-    allGroups.forEach(g => {
-      const count = groupCountMap.get(g) || 0;
-      const selected = selectedGroups.includes(g);
-      const div = document.createElement('div');
-      div.className = `group-item ${selected ? 'selected' : ''}`;
-      div.setAttribute('data-group', g);
-      div.innerHTML = `
-        <input type="checkbox" class="group-checkbox" ${selected ? 'checked' : ''}>
-        <div class="group-name">${g}</div>
-        <div class="group-count">${count}个源</div>
-      `;
-      fragment.appendChild(div);
-    });
-    
-    el.groupCheckboxes.innerHTML = '';
-    el.groupCheckboxes.appendChild(fragment);
-  },
-  
-  toggleGroup: g => {
-    const idx = selectedGroups.indexOf(g);
-    idx > -1 ? selectedGroups.splice(idx, 1) : selectedGroups.push(g);
-    core.updateGroupCheckboxes();
-  },
-  
-  extractUrls: t => {
-    const result = [];
-    let currentGroup = '默认分组';
-    const lines = t.split('\n');
-    const urlSet = new Set();
-    
-    // 解析M3U格式标志
-    const isM3U = t.includes('#EXTM3U') || t.includes('#EXTINF');
-    
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
-      if (!line) continue;
       
-      // 处理分组行: 分组名称,#genre#分组名称
-      if (line.includes(',#genre#')) {
-        const match = line.match(/^(.*),#genre#(.*)$/);
-        if (match) currentGroup = (match[2] || match[1]).trim();
-        continue;
-      }
+      el.groupCheckboxes.innerHTML = '';
+      el.groupCheckboxes.appendChild(fragment);
+    },
+    
+    toggleGroup: g => {
+      if (detector.running) return;
+      const idx = state.selectedGroups.indexOf(g);
+      idx > -1 ? state.selectedGroups.splice(idx, 1) : state.selectedGroups.push(g);
+      core.updateGroupCheckboxes();
+    },
+    
+    extractUrls: t => {
+      const result = [];
+      let currentGroup = '默认分组';
+      const lines = t.split('\n');
+      const urlSet = new Set();
       
-      // 处理M3U格式的EXTINF行
-      if (line.startsWith('#EXTINF:')) {
-        // 保存完整的EXTINF行
-        const extinfLine = line;
+      state.importData = {
+        groupInfo: {},
+        sources: {}
+      };
+      
+      // 解析M3U格式标志
+      const isM3U = t.includes('#EXTM3U') || t.includes('#EXTINF');
+      
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line) continue;
         
-        // 尝试从EXTINF行提取信息
-        let channelName = '';
-        let group = currentGroup;
-        let tvgId = '';
-        let tvgName = '';
-        let tvgLogo = '';
-        let duration = '-1';
-        
-        // 提取持续时间（-1前面的数字）
-        const durationMatch = line.match(/^#EXTINF:([^,]+)/);
-        if (durationMatch) {
-          duration = durationMatch[1];
+        // 处理分组行: 分组名称,#genre#分组名称
+        if (line.includes(',#genre#')) {
+          const match = line.match(/^(.*),#genre#(.*)$/);
+          if (match) {
+            currentGroup = (match[2] || match[1]).trim();
+            state.importData.groupInfo[currentGroup] = line;
+          }
+          continue;
         }
         
-        // 尝试提取group-title
-        const groupMatch = line.match(/group-title="([^"]+)"/i);
-        if (groupMatch) {
-          group = groupMatch[1];
-        }
-        
-        // 尝试提取tvg-id
-        const tvgIdMatch = line.match(/tvg-id="([^"]+)"/i);
-        if (tvgIdMatch) {
-          tvgId = tvgIdMatch[1];
-        }
-        
-        // 尝试提取tvg-name
-        const tvgNameMatch = line.match(/tvg-name="([^"]+)"/i);
-        if (tvgNameMatch) {
-          tvgName = tvgNameMatch[1];
-        }
-        
-        // 尝试提取tvg-logo
-        const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/i);
-        if (tvgLogoMatch) {
-          tvgLogo = tvgLogoMatch[1];
-        }
-        
-        // 提取频道名称（逗号后的部分）
-        const commaIndex = line.lastIndexOf(',');
-        if (commaIndex > -1) {
-          channelName = line.substring(commaIndex + 1).trim();
-        }
-        
-        // 如果没有从属性中获取到频道名称，使用tvg-name
-        if (!channelName && tvgName) {
-          channelName = tvgName;
-        }
-        
-        // 查找下一行的URL
-        if (i + 1 < lines.length) {
-          const nextLine = lines[i + 1].trim();
-          if (nextLine && !nextLine.startsWith('#') && !nextLine.includes(',#genre#')) {
-            // 检查是否是URL
-            const urlMatch = nextLine.match(/(https?:\/\/[^\s<>"']+)/gi);
-            if (urlMatch && urlMatch[0]) {
-              const url = urlMatch[0].replace(/[\s,;'"`]+$/, '');
-              if (url.length > 10 && !urlSet.has(url)) {
-                urlSet.add(url);
-                result.push({ 
-                  url: url, 
-                  group: group,
-                  channelName: channelName,
-                  tvgId: tvgId,
-                  tvgName: tvgName,
-                  tvgLogo: tvgLogo,
-                  extinfLine: extinfLine, // 保存完整的EXTINF行
-                  duration: duration,
-                  format: 'm3u', // 标记为M3U格式
-                  status: 'unknown',
-                  detectionTime: 0
-                });
-                i++; // 跳过URL行
+        // 处理M3U格式的EXTINF行
+        if (line.startsWith('#EXTINF:')) {
+          // 保存完整的EXTINF行
+          const extinfLine = line;
+          
+          // 尝试从EXTINF行提取信息
+          let channelName = '';
+          let group = currentGroup;
+          let tvgId = '';
+          let tvgName = '';
+          let tvgLogo = '';
+          let duration = '-1';
+          
+          // 提取持续时间（-1前面的数字）
+          const durationMatch = line.match(/^#EXTINF:([^,]+)/);
+          if (durationMatch) {
+            duration = durationMatch[1];
+          }
+          
+          // 尝试提取group-title
+          const groupMatch = line.match(/group-title="([^"]+)"/i);
+          if (groupMatch) {
+            group = groupMatch[1];
+          }
+          
+          // 尝试提取tvg-id
+          const tvgIdMatch = line.match(/tvg-id="([^"]+)"/i);
+          if (tvgIdMatch) {
+            tvgId = tvgIdMatch[1];
+          }
+          
+          // 尝试提取tvg-name
+          const tvgNameMatch = line.match(/tvg-name="([^"]+)"/i);
+          if (tvgNameMatch) {
+            tvgName = tvgNameMatch[1];
+          }
+          
+          // 尝试提取tvg-logo
+          const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/i);
+          if (tvgLogoMatch) {
+            tvgLogo = tvgLogoMatch[1];
+          }
+          
+          // 提取频道名称（逗号后的部分）
+          const commaIndex = line.lastIndexOf(',');
+          if (commaIndex > -1) {
+            channelName = line.substring(commaIndex + 1).trim();
+          }
+          
+          // 如果没有从属性中获取到频道名称，使用tvg-name
+          if (!channelName && tvgName) {
+            channelName = tvgName;
+          }
+          
+          // 查找下一行的URL
+          if (i + 1 < lines.length) {
+            const nextLine = lines[i + 1].trim();
+            if (nextLine && !nextLine.startsWith('#') && !nextLine.includes(',#genre#')) {
+              // 检查是否是URL
+              const urlMatch = nextLine.match(/(https?:\/\/[^\s<>"']+)/gi);
+              if (urlMatch && urlMatch[0]) {
+                const url = urlMatch[0].replace(/[\s,;'"`]+$/, '');
+                if (url.length > 10 && !urlSet.has(url)) {
+                  urlSet.add(url);
+                  result.push({ 
+                    url: url, 
+                    group: group,
+                    channelName: channelName,
+                    tvgId: tvgId,
+                    tvgName: tvgName,
+                    tvgLogo: tvgLogo,
+                    extinfLine: extinfLine, // 保存完整的EXTINF行
+                    duration: duration,
+                    format: 'm3u', // 标记为M3U格式
+                    status: 'unknown',
+                    detectionTime: 0
+                  });
+                  i++; // 跳过URL行
+                }
               }
             }
           }
+          continue;
         }
-        continue;
-      }
-      
-      if (line.startsWith('#') || line.startsWith('//')) continue;
-      
-      // 尝试提取频道名称和URL (格式: 频道名称,URL)
-      let channelName = currentGroup;
-      let url = '';
-      
-      const commaIndex = line.indexOf(',');
-      if (commaIndex > 0) {
-        // 如果有逗号，尝试解析为"频道名称,URL"格式
-        const beforeComma = line.substring(0, commaIndex).trim();
-        const afterComma = line.substring(commaIndex + 1).trim();
         
-        // 检查逗号后的部分是否是URL
-        const urlMatch = afterComma.match(/(https?:\/\/[^\s<>"']+)/gi);
-        if (urlMatch && urlMatch[0]) {
-          channelName = beforeComma || currentGroup;
-          url = urlMatch[0];
+        if (line.startsWith('#') || line.startsWith('//')) continue;
+        
+        // 尝试提取频道名称和URL (格式: 频道名称,URL)
+        let channelName = currentGroup;
+        let url = '';
+        
+        const commaIndex = line.indexOf(',');
+        if (commaIndex > 0) {
+          // 如果有逗号，尝试解析为"频道名称,URL"格式
+          const beforeComma = line.substring(0, commaIndex).trim();
+          const afterComma = line.substring(commaIndex + 1).trim();
+          
+          // 检查逗号后的部分是否是URL
+          const urlMatch = afterComma.match(/(https?:\/\/[^\s<>"']+)/gi);
+          if (urlMatch && urlMatch[0]) {
+            channelName = beforeComma || currentGroup;
+            url = urlMatch[0];
+          } else {
+            // 如果不是"频道名称,URL"格式，则整个行可能是URL
+            const matches = line.match(/(https?:\/\/[^\s<>"']+)/gi);
+            if (matches) {
+              url = matches[0];
+            }
+          }
         } else {
-          // 如果不是"频道名称,URL"格式，则整个行可能是URL
+          // 没有逗号，直接提取URL
           const matches = line.match(/(https?:\/\/[^\s<>"']+)/gi);
           if (matches) {
             url = matches[0];
           }
         }
-      } else {
-        // 没有逗号，直接提取URL
-        const matches = line.match(/(https?:\/\/[^\s<>"']+)/gi);
-        if (matches) {
-          url = matches[0];
-        }
-      }
-      
-      if (url) {
-        url = url.replace(/[\s,;'"`]+$/, '');
-        if (url.length > 10 && !urlSet.has(url)) {
-          urlSet.add(url);
-          result.push({ 
-            url: url, 
-            group: currentGroup, 
-            channelName: channelName,
-            tvgId: '',
-            tvgName: '',
-            tvgLogo: '',
-            format: 'text', // 标记为文本格式
-            status: 'unknown',
-            detectionTime: 0
-          });
-        }
-      }
-    }
-    
-    return result;
-  },
-  
-  addSources: items => {
-    const oldCount = data.length;
-    const urlSet = new Set(data.map(d => d.url));
-    const newGroups = new Set();
-    
-    for (let item of items) {
-      if (!urlSet.has(item.url)) {
-        urlSet.add(item.url);
-        data.push(item);
-        newGroups.add(item.group);
-      }
-    }
-    
-    return { added: data.length - oldCount, newGroups: newGroups.size };
-  },
-  
-  // 切换列表过滤器
-  setFilter: (filter) => {
-    currentFilter = filter;
-    
-    // 更新选项卡激活状态
-    document.querySelectorAll('.list-tab').forEach(tab => {
-      if (tab.getAttribute('data-filter') === filter) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
-    });
-    
-    // 更新列表显示
-    core.update();
-  },
-  
-  // 获取当前显示的有效URL
-  getCurrentValidUrls: () => {
-    const filteredData = core.getFilteredData();
-    return filteredData.filter(item => item.status === 'valid').map(item => item.url);
-  },
-  
-  // 选择当前显示的所有有效项
-  selectAllCurrent: () => {
-    const currentValidUrls = core.getCurrentValidUrls();
-    currentValidUrls.forEach(url => selectedUrls.add(url));
-    core.update();
-  },
-  
-  // 取消选择当前显示的所有有效项
-  deselectAllCurrent: () => {
-    const currentValidUrls = core.getCurrentValidUrls();
-    currentValidUrls.forEach(url => selectedUrls.delete(url));
-    core.update();
-  },
-  
-  // 导出勾选的项 - 智能判断格式
-  exportSelected: () => {
-    if (selectedUrls.size === 0) {
-      alert('请先勾选要导出的直播源');
-      return;
-    }
-    
-    // 获取勾选的有效数据
-    const selectedData = data.filter(item => selectedUrls.has(item.url) && item.status === 'valid');
-    
-    if (selectedData.length === 0) {
-      alert('请先勾选有效的直播源');
-      return;
-    }
-    
-    // 判断数据格式：如果至少有一个是M3U格式，就按M3U格式导出，否则按文本格式导出
-    const hasM3UFormat = selectedData.some(item => item.format === 'm3u');
-    
-    if (hasM3UFormat) {
-      // 导出为M3U格式
-      core.exportSelectedAsM3U(selectedData);
-    } else {
-      // 导出为文本格式
-      core.exportSelectedAsText(selectedData);
-    }
-  },
-  
-  // 以M3U格式导出
-  exportSelectedAsM3U: (selectedData) => {
-    // 按分组组织数据
-    const groupedData = {};
-    selectedData.forEach(item => {
-      if (!groupedData[item.group]) {
-        groupedData[item.group] = [];
-      }
-      groupedData[item.group].push(item);
-    });
-    
-    // 生成M3U内容
-    let m3uContent = '#EXTM3U\n';
-    
-    Object.keys(groupedData).forEach(group => {
-      // 添加分组下的所有频道
-      groupedData[group].forEach(item => {
-        if (item.format === 'm3u' && item.extinfLine) {
-          // 如果是M3U格式且有保存的EXTINF行，使用保存的行
-          m3uContent += item.extinfLine + '\n';
-        } else {
-          // 否则生成新的EXTINF行
-          const channelName = item.channelName || item.group;
-          const tvgId = item.tvgId || utils.generateId(channelName);
-          const tvgLogo = item.tvgLogo || '';
-          
-          // 生成EXTINF行
-          m3uContent += `#EXTINF:-1 tvg-id="${tvgId}" tvg-name="${channelName}"`;
-          if (tvgLogo) {
-            m3uContent += ` tvg-logo="${tvgLogo}"`;
-          }
-          m3uContent += ` group-title="${group}",${channelName}\n`;
-        }
         
-        // 添加URL行
-        m3uContent += item.url + '\n';
-      });
-    });
-    
-    // 生成文件名
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `直播源_M3U_${selectedUrls.size}个_${timestamp}.m3u`;
-    
-    // 导出文件
-    utils.exportToFile(m3uContent, filename);
-    
-    alert(`已导出 ${selectedUrls.size} 个直播源到 ${filename} (M3U格式)`);
-  },
-  
-  // 以文本格式导出
-  exportSelectedAsText: (selectedData) => {
-    // 按分组组织数据
-    const groupedData = {};
-    selectedData.forEach(item => {
-      if (!groupedData[item.group]) {
-        groupedData[item.group] = [];
-      }
-      groupedData[item.group].push(item);
-    });
-    
-    // 生成导出内容
-    let exportContent = '';
-    
-    // 添加分组和频道
-    Object.keys(groupedData).forEach(group => {
-      // 添加分组行
-      exportContent += `${group},#genre#${group}\n`;
-      
-      // 添加该分组下的所有频道
-      groupedData[group].forEach(item => {
-        exportContent += `${item.channelName || item.group},${item.url}\n`;
-      });
-      
-      // 分组之间添加空行
-      exportContent += '\n';
-    });
-    
-    // 移除最后一个空行
-    exportContent = exportContent.trim();
-    
-    // 生成文件名
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `直播源_文本_${selectedUrls.size}个_${timestamp}.txt`;
-    
-    // 导出文件
-    utils.exportToFile(exportContent, filename);
-    
-    alert(`已导出 ${selectedUrls.size} 个直播源到 ${filename} (文本格式)`);
-  },
-  
-  // 处理勾选框变化
-  handleCheckboxChange: (url, checked) => {
-    if (checked) {
-      selectedUrls.add(url);
-    } else {
-      selectedUrls.delete(url);
-    }
-  },
-  
-  // 自动勾选所有有效项
-  autoSelectAllValid: () => {
-    const validUrls = data.filter(item => item.status === 'valid').map(item => item.url);
-    validUrls.forEach(url => selectedUrls.add(url));
-  },
-  
-  // 根据URL查找数据项
-  findItemByUrl: (url) => {
-    return data.find(item => item.url === url);
-  }
-};
-
-const detector = {
-  queue: [],
-  workers: [],
-  timeout: 5000,
-  delay: 30,
-  concurrency: 10,
-  running: false,
-  
-  init: () => {
-    el.timeoutSlider.oninput = () => {
-      detector.timeout = parseInt(el.timeoutSlider.value) * 1000;
-      el.timeoutValue.textContent = el.timeoutSlider.value + '秒';
-    };
-    
-    el.delaySlider.oninput = () => {
-      detector.delay = parseInt(el.delaySlider.value);
-      el.delayValue.textContent = el.delaySlider.value + 'ms';
-    };
-    
-    el.concurrencySlider.oninput = () => {
-      detector.concurrency = parseInt(el.concurrencySlider.value);
-      el.concurrencyValue.textContent = el.concurrencySlider.value + '个';
-    };
-    
-    detector.timeout = parseInt(el.timeoutSlider.value) * 1000;
-    detector.delay = parseInt(el.delaySlider.value);
-    detector.concurrency = parseInt(el.concurrencySlider.value);
-  },
-  
-  testSource: async (source, index) => {
-    return new Promise((resolve) => {
-      const startTime = Date.now();
-      const video = document.createElement('video');
-      video.style.display = 'none';
-      document.body.appendChild(video);
-      
-      let timeoutId, resolved = false;
-      
-      const cleanup = () => {
-        if (resolved) return;
-        resolved = true;
-        clearTimeout(timeoutId);
-        video.pause();
-        video.src = '';
-        video.load();
-        document.body.removeChild(video);
-      };
-      
-      const onSuccess = () => {
-        if (resolved) return;
-        const detectionTime = Date.now() - startTime;
-        cleanup();
-        resolve({ index, status: 'valid', detectionTime });
-      };
-      
-      const onError = () => {
-        if (resolved) return;
-        const detectionTime = Date.now() - startTime;
-        cleanup();
-        resolve({ index, status: 'invalid', detectionTime });
-      };
-      
-      timeoutId = setTimeout(() => {
-        if (resolved) return;
-        const detectionTime = Date.now() - startTime;
-        cleanup();
-        resolve({ index, status: 'invalid', detectionTime });
-      }, detector.timeout);
-      
-      video.addEventListener('canplay', onSuccess, { once: true });
-      video.addEventListener('loadedmetadata', onSuccess, { once: true });
-      video.addEventListener('error', onError, { once: true });
-      video.addEventListener('stalled', onError, { once: true });
-      
-      video.src = utils.cleanUrl(source.url);
-      video.load();
-      video.play().catch(() => {});
-    });
-  },
-  
-  updateProgress: () => {
-    const total = detector.queue.length;
-    const processed = detectionStats.processed;
-    const progress = total > 0 ? (processed / total) * 100 : 0;
-    
-    el.progressFill.style.width = `${progress}%`;
-    el.processedCount.textContent = processed;
-    el.validDetectedCount.textContent = detectionStats.valid;
-    el.invalidDetectedCount.textContent = detectionStats.invalid;
-    
-    if (detectionStats.startTime > 0) {
-      const elapsed = (Date.now() - detectionStats.startTime) / 1000;
-      const speed = elapsed > 0 ? Math.round(processed / elapsed) : 0;
-      el.speedValue.textContent = speed;
-      
-      if (detectionStats.totalTime > 0 && processed > 0) {
-        const avgTime = Math.round(detectionStats.totalTime / processed);
-        el.avgTimeValue.textContent = utils.formatTime(avgTime);
-      }
-    }
-    
-    core.update();
-  },
-  
-  processResult: (result) => {
-    const { index, status, detectionTime } = result;
-    const source = data[index];
-    
-    if (source) {
-      const wasValid = source.status === 'valid';
-      source.status = status;
-      source.detectionTime = detectionTime;
-      
-      detectionStats.processed++;
-      detectionStats.totalTime += detectionTime;
-      
-      if (status === 'valid') {
-        // 如果是新检测为有效的项，自动勾选
-        if (!wasValid) {
-          selectedUrls.add(source.url);
+        if (url) {
+          url = url.replace(/[\s,;'"`]+$/, '');
+          if (url.length > 10 && !urlSet.has(url)) {
+            urlSet.add(url);
+            result.push({ 
+              url: url, 
+              group: currentGroup, 
+              channelName: channelName,
+              tvgId: '',
+              tvgName: '',
+              tvgLogo: '',
+              format: 'text', // 标记为文本格式
+              status: 'unknown',
+              detectionTime: 0
+            });
+          }
         }
-        detectionStats.valid++;
-      } else {
-        // 如果是无效项，从勾选列表中移除
-        selectedUrls.delete(source.url);
-        detectionStats.invalid++;
       }
       
-      detector.updateProgress();
-    }
-  },
-  
-  worker: async () => {
-    while (detector.running && detector.queue.length > 0) {
-      const task = detector.queue.shift();
-      if (!task) break;
+      return result;
+    },
+    
+    addSources: items => {
+      const oldCount = state.data.length;
+      const urlSet = new Set(state.data.map(d => d.url));
+      const newGroups = new Set();
       
-      const result = await detector.testSource(task.source, task.index);
-      detector.processResult(result);
-      
-      if (detector.delay > 0 && detector.queue.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, detector.delay));
+      for (let item of items) {
+        if (!urlSet.has(item.url)) {
+          urlSet.add(item.url);
+          state.data.push(item);
+          newGroups.add(item.group);
+        }
       }
-    }
-  },
-  
-  start: async () => {
-    if (detector.running || data.length === 0) return;
-    
-    detector.running = true;
-    detectionStats = {
-      processed: 0,
-      valid: 0,
-      invalid: 0,
-      startTime: Date.now(),
-      totalTime: 0
-    };
-    
-    el.avgTimeValue.textContent = '0ms';
-    
-    utils.toggleControls(false);
-    el.testBtn.textContent = '停止检测';
-    el.testBtn.classList.remove('green');
-    el.testBtn.classList.add('red');
-    
-    detector.queue = data.map((source, index) => ({ source, index }));
-    
-    detector.workers = [];
-    const workerCount = Math.min(detector.concurrency, detector.queue.length);
-    
-    for (let i = 0; i < workerCount; i++) {
-      detector.workers.push(detector.worker());
-    }
-    
-    try {
-      await Promise.all(detector.workers);
-    } catch (error) {
-      console.error('检测过程中出错:', error);
-    }
-    
-    detector.stop();
-  },
-  
-  stop: () => {
-    detector.running = false;
-    detector.queue = [];
-    detector.workers = [];
-    
-    utils.toggleControls(true);
-    el.testBtn.textContent = '开始检测';
-    el.testBtn.classList.remove('red');
-    el.testBtn.classList.add('green');
-    
-    // 检测完成后，自动勾选所有有效项
-    core.autoSelectAllValid();
-    
-    if (detectionStats.processed > 0) {
-      const avgTime = detectionStats.totalTime > 0 ? 
-        Math.round(detectionStats.totalTime / detectionStats.processed) : 0;
       
-      alert(`检测完成！\n已处理: ${detectionStats.processed}个\n有效: ${detectionStats.valid}个\n失效: ${detectionStats.invalid}个\n平均耗时: ${utils.formatTime(avgTime)}`);
-    }
-  }
-};
-
-const events = {
-  init: () => {
-    // 初始化视频播放器
-    videoPlayer.init();
+      return { added: state.data.length - oldCount, newGroups: newGroups.size };
+    },
     
-    // 初始化检测器
-    detector.init();
+    // 切换列表过滤器
+    setFilter: (filter) => {
+      state.currentFilter = filter;
+      
+      // 更新选项卡激活状态
+      document.querySelectorAll('.list-tab').forEach(tab => {
+        if (tab.getAttribute('data-filter') === filter) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      
+      // 更新列表显示
+      core.update();
+    },
     
-    // 测试按钮事件
-    el.testBtn.onclick = () => {
-      if (data.length === 0) {
-        alert('请先导入直播源');
+    // 获取当前显示的有效URL
+    getCurrentValidUrls: () => {
+      const filteredData = core.getFilteredData();
+      return filteredData.filter(item => item.status === 'valid').map(item => item.url);
+    },
+    
+    // 选择当前显示的所有有效项
+    selectAllCurrent: () => {
+      const currentValidUrls = core.getCurrentValidUrls();
+      currentValidUrls.forEach(url => state.selectedUrls.add(url));
+      core.update();
+    },
+    
+    // 取消选择当前显示的所有有效项
+    deselectAllCurrent: () => {
+      const currentValidUrls = core.getCurrentValidUrls();
+      currentValidUrls.forEach(url => state.selectedUrls.delete(url));
+      core.update();
+    },
+    
+    // 导出勾选的项 - 智能判断格式
+    exportSelected: () => {
+      if (state.selectedUrls.size === 0) {
+        alert('请先勾选要导出的直播源');
         return;
       }
       
-      if (detector.running) {
-        detector.stop();
-      } else {
-        detector.start();
-      }
-    };
-    
-    // 清空按钮事件
-    document.getElementById('clearBtn').onclick = () => {
-      if (data.length && confirm('清空所有直播源？')) {
-        data = [];
-        selectedGroups = [];
-        selectedUrls.clear();
-        videoPlayer.stop();
-        detector.stop();
-        core.update();
-      }
-    };
-    
-    // 本地导入按钮事件
-    document.getElementById('localImportBtn').onclick = () => el.fileInput.click();
-    
-    // 网络导入按钮事件
-    document.getElementById('networkImportBtn').onclick = () => {
-      el.networkUrl.value = '';
-      el.networkStatus.style.display = 'none';
-      el.modal.style.display = 'block';
-      el.networkUrl.focus();
-    };
-    
-    // 频道管理按钮事件
-    document.getElementById('groupBtn').onclick = () => {
-      selectedGroups = [...allGroups];
-      el.groupModal.style.display = 'block';
-      core.updateGroupCheckboxes();
-    };
-    
-    // 关闭频道管理模态框
-    document.getElementById('closeGroupBtn').onclick = () => el.groupModal.style.display = 'none';
-    
-    // 取消网络导入
-    document.getElementById('cancelImportBtn').onclick = () => {
-      el.modal.style.display = 'none';
-      document.getElementById('confirmImportBtn').disabled = false;
-    };
-    
-    // 文件选择事件
-    el.fileInput.onchange = e => {
-      const file = e.target.files[0];
-      if (!file) return;
+      // 获取勾选的有效数据
+      const selectedData = state.data.filter(item => state.selectedUrls.has(item.url) && item.status === 'valid');
       
-      const reader = new FileReader();
-      reader.onload = e => {
-        const items = core.extractUrls(e.target.result);
-        const result = core.addSources(items);
-        if (result.added > 0) {
-          alert(`导入${result.added}个直播源，新增${result.newGroups}个分组`);
+      if (selectedData.length === 0) {
+        alert('请先勾选有效的直播源');
+        return;
+      }
+      
+      // 判断数据格式：如果至少有一个是M3U格式，就按M3U格式导出，否则按文本格式导出
+      const hasM3UFormat = selectedData.some(item => item.format === 'm3u');
+      
+      if (hasM3UFormat) {
+        // 导出为M3U格式
+        core.exportSelectedAsM3U(selectedData);
+      } else {
+        // 导出为文本格式
+        core.exportSelectedAsText(selectedData);
+      }
+    },
+    
+    // 以M3U格式导出
+    exportSelectedAsM3U: (selectedData) => {
+      // 按分组组织数据
+      const groupedData = {};
+      selectedData.forEach(item => {
+        if (!groupedData[item.group]) {
+          groupedData[item.group] = [];
+        }
+        groupedData[item.group].push(item);
+      });
+      
+      // 生成M3U内容
+      let m3uContent = '#EXTM3U\n';
+      
+      Object.keys(groupedData).forEach(group => {
+        // 添加分组下的所有频道
+        groupedData[group].forEach(item => {
+          if (item.format === 'm3u' && item.extinfLine) {
+            // 如果是M3U格式且有保存的EXTINF行，使用保存的行
+            m3uContent += item.extinfLine + '\n';
+          } else {
+            // 否则生成新的EXTINF行
+            const channelName = item.channelName || item.group;
+            const tvgId = item.tvgId || utils.generateId(channelName);
+            const tvgLogo = item.tvgLogo || '';
+            
+            // 生成EXTINF行
+            m3uContent += `#EXTINF:-1 tvg-id="${tvgId}" tvg-name="${channelName}"`;
+            if (tvgLogo) {
+              m3uContent += ` tvg-logo="${tvgLogo}"`;
+            }
+            m3uContent += ` group-title="${group}",${channelName}\n`;
+          }
+          
+          // 添加URL行
+          m3uContent += item.url + '\n';
+        });
+      });
+      
+      // 生成文件名
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `直播源_M3U_${state.selectedUrls.size}个_${timestamp}.m3u`;
+      
+      // 导出文件
+      utils.exportToFile(m3uContent, filename);
+      
+      alert(`已导出 ${state.selectedUrls.size} 个直播源到 ${filename} (M3U格式)`);
+    },
+    
+    // 以文本格式导出
+    exportSelectedAsText: (selectedData) => {
+      // 按分组组织数据
+      const groupedData = {};
+      selectedData.forEach(item => {
+        if (!groupedData[item.group]) {
+          groupedData[item.group] = [];
+        }
+        groupedData[item.group].push(item);
+      });
+      
+      // 生成导出内容
+      let exportContent = '';
+      
+      // 添加分组和频道
+      Object.keys(groupedData).forEach(group => {
+        // 添加分组行
+        exportContent += `${group},#genre#${group}\n`;
+        
+        // 添加该分组下的所有频道
+        groupedData[group].forEach(item => {
+          exportContent += `${item.channelName || item.group},${item.url}\n`;
+        });
+        
+        // 分组之间添加空行
+        exportContent += '\n';
+      });
+      
+      // 移除最后一个空行
+      exportContent = exportContent.trim();
+      
+      // 生成文件名
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `直播源_文本_${state.selectedUrls.size}个_${timestamp}.txt`;
+      
+      // 导出文件
+      utils.exportToFile(exportContent, filename);
+      
+      alert(`已导出 ${state.selectedUrls.size} 个直播源到 ${filename} (文本格式)`);
+    },
+    
+    // 处理勾选框变化
+    handleCheckboxChange: (url, checked) => {
+      if (checked) {
+        state.selectedUrls.add(url);
+      } else {
+        state.selectedUrls.delete(url);
+      }
+    },
+    
+    // 自动勾选所有有效项
+    autoSelectAllValid: () => {
+      const validUrls = state.data.filter(item => item.status === 'valid').map(item => item.url);
+      validUrls.forEach(url => state.selectedUrls.add(url));
+    },
+    
+    // 根据URL查找数据项
+    findItemByUrl: (url) => {
+      return state.data.find(item => item.url === url);
+    }
+  };
+  
+  // 检测器 - 使用第一个文件中的可靠检测方法
+  const detector = {
+    queue: [],
+    workers: [],
+    timeout: 5000,
+    delay: 200,
+    concurrency: 10,
+    running: false,
+    
+    init: () => {
+      el.timeoutSlider.oninput = () => {
+        detector.timeout = parseInt(el.timeoutSlider.value) * 1000;
+        el.timeoutValue.textContent = el.timeoutSlider.value + '秒';
+      };
+      
+      el.delaySlider.oninput = () => {
+        detector.delay = parseInt(el.delaySlider.value);
+        el.delayValue.textContent = el.delaySlider.value + 'ms';
+      };
+      
+      el.concurrencySlider.oninput = () => {
+        detector.concurrency = parseInt(el.concurrencySlider.value);
+        el.concurrencyValue.textContent = el.concurrencySlider.value + '个';
+      };
+      
+      detector.timeout = parseInt(el.timeoutSlider.value) * 1000;
+      detector.delay = parseInt(el.delaySlider.value);
+      detector.concurrency = parseInt(el.concurrencySlider.value);
+    },
+    
+    // 使用第一个文件中可靠的检测方法
+    testSource: (source, index) => {
+      return new Promise((resolve) => {
+        const timeout = detector.timeout; // 使用当前设置的超时时间
+        const video = document.createElement('video');
+        video.muted = true; // 静音避免声音干扰
+        video.preload = 'auto'; // 预加载
+        video.style.display = 'none'; // 隐藏视频元素
+        
+        let timer = setTimeout(() => {
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'invalid', 
+            detectionTime: timeout,
+            reason: '超时'
+          });
+        }, timeout);
+        
+        // 记录开始时间
+        const startTime = Date.now();
+        
+        function cleanup() {
+          clearTimeout(timer);
+          video.src = '';
+          video.load();
+          if (video.parentNode) {
+            video.parentNode.removeChild(video);
+          }
+        }
+        
+        // 成功加载视频数据
+        video.onloadeddata = () => {
+          const detectionTime = Date.now() - startTime;
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '成功加载视频数据'
+          });
+        };
+        
+        // 视频可以播放
+        video.oncanplay = () => {
+          const detectionTime = Date.now() - startTime;
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '视频可以播放'
+          });
+        };
+        
+        // 视频可以流畅播放
+        video.oncanplaythrough = () => {
+          const detectionTime = Date.now() - startTime;
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'valid', 
+            detectionTime,
+            reason: '视频可以流畅播放'
+          });
+        };
+        
+        // 视频加载错误
+        video.onerror = () => {
+          const detectionTime = Date.now() - startTime;
+          cleanup();
+          resolve({ 
+            index, 
+            status: 'invalid', 
+            detectionTime,
+            reason: '视频加载错误'
+          });
+        };
+        
+        // 设置视频源并开始加载
+        video.src = utils.cleanUrl(source.url);
+        document.body.appendChild(video); // 添加到DOM以便加载
+        video.load();
+        
+        // 尝试播放（静音状态下通常会被允许）
+        video.play().catch(() => {
+          // 自动播放被阻止是正常的，不影响检测
+        });
+      });
+    },
+    
+    updateProgress: () => {
+      const total = detector.queue.length;
+      const processed = state.detectionStats.processed;
+      const progress = total > 0 ? (processed / total) * 100 : 0;
+      
+      el.progressFill.style.width = `${progress}%`;
+      el.processedCount.textContent = processed;
+      el.validDetectedCount.textContent = state.detectionStats.valid;
+      el.invalidDetectedCount.textContent = state.detectionStats.invalid;
+      
+      if (state.detectionStats.startTime > 0) {
+        const elapsed = (Date.now() - state.detectionStats.startTime) / 1000;
+        const speed = elapsed > 0 ? Math.round(processed / elapsed) : 0;
+        el.speedValue.textContent = speed;
+        
+        if (state.detectionStats.totalTime > 0 && processed > 0) {
+          const avgTime = Math.round(state.detectionStats.totalTime / processed);
+          el.avgTimeValue.textContent = utils.formatTime(avgTime);
+        }
+      }
+      
+      core.update();
+    },
+    
+    processResult: (result) => {
+      const { index, status, detectionTime } = result;
+      const source = state.data[index];
+      
+      if (source) {
+        const wasValid = source.status === 'valid';
+        source.status = status;
+        source.detectionTime = detectionTime;
+        
+        state.detectionStats.processed++;
+        state.detectionStats.totalTime += detectionTime;
+        
+        if (status === 'valid') {
+          // 如果是新检测为有效的项，自动勾选
+          if (!wasValid) {
+            state.selectedUrls.add(source.url);
+          }
+          state.detectionStats.valid++;
+        } else {
+          // 如果是无效项，从勾选列表中移除
+          state.selectedUrls.delete(source.url);
+          state.detectionStats.invalid++;
+        }
+        
+        detector.updateProgress();
+      }
+    },
+    
+    worker: async () => {
+      while (detector.running && detector.queue.length > 0) {
+        const task = detector.queue.shift();
+        if (!task) break;
+        
+        const result = await detector.testSource(task.source, task.index);
+        detector.processResult(result);
+        
+        if (detector.delay > 0 && detector.queue.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, detector.delay));
+        }
+      }
+    },
+    
+    start: async () => {
+      if (detector.running || state.data.length === 0) return;
+      
+      detector.running = true;
+      state.detectionStats = {
+        processed: 0,
+        valid: 0,
+        invalid: 0,
+        startTime: Date.now(),
+        totalTime: 0
+      };
+      
+      el.avgTimeValue.textContent = '0ms';
+      
+      utils.toggleControls(false);
+      el.testBtn.textContent = '停止检测';
+      el.testBtn.classList.remove('green');
+      el.testBtn.classList.add('red');
+      
+      detector.queue = state.data.map((source, index) => ({ source, index }));
+      
+      detector.workers = [];
+      const workerCount = Math.min(detector.concurrency, detector.queue.length);
+      
+      for (let i = 0; i < workerCount; i++) {
+        detector.workers.push(detector.worker());
+      }
+      
+      try {
+        await Promise.all(detector.workers);
+      } catch (error) {
+        console.error('检测过程中出错:', error);
+      }
+      
+      detector.stop();
+    },
+    
+    stop: () => {
+      detector.running = false;
+      detector.queue = [];
+      detector.workers = [];
+      
+      utils.toggleControls(true);
+      el.testBtn.textContent = '开始检测';
+      el.testBtn.classList.remove('red');
+      el.testBtn.classList.add('green');
+      
+      // 检测完成后，自动勾选所有有效项
+      core.autoSelectAllValid();
+      
+      if (state.detectionStats.processed > 0) {
+        const avgTime = state.detectionStats.totalTime > 0 ? 
+          Math.round(state.detectionStats.totalTime / state.detectionStats.processed) : 0;
+        
+        alert(`检测完成！\n已处理: ${state.detectionStats.processed}个\n有效: ${state.detectionStats.valid}个\n失效: ${state.detectionStats.invalid}个\n平均耗时: ${utils.formatTime(avgTime)}`);
+      }
+    }
+  };
+  
+  // 事件处理
+  const events = {
+    init: () => {
+      // 初始化视频播放器
+      videoPlayer.init();
+      
+      // 初始化检测器
+      detector.init();
+      
+      // 测试按钮事件
+      el.testBtn.onclick = () => {
+        if (state.data.length === 0) {
+          alert('请先导入直播源');
+          return;
+        }
+        
+        if (detector.running) {
+          detector.stop();
+        } else {
+          detector.start();
+        }
+      };
+      
+      // 清空按钮事件
+      document.getElementById('clearBtn').onclick = () => {
+        if (state.data.length && confirm('清空所有直播源？')) {
+          state.data = [];
+          state.selectedGroups = [];
+          state.selectedUrls.clear();
+          videoPlayer.stop();
+          detector.stop();
           core.update();
         }
       };
-      reader.readAsText(file);
-      el.fileInput.value = '';
-    };
-    
-    // 确认网络导入
-    document.getElementById('confirmImportBtn').onclick = async () => {
-      const url = el.networkUrl.value.trim();
-      const cleaned = utils.cleanUrl(url);
       
-      if (!url) {
-        utils.showStatus('请输入URL', true);
-        return;
-      }
+      // 本地导入按钮事件
+      document.getElementById('localImportBtn').onclick = () => el.fileInput.click();
       
-      if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-        utils.showStatus('URL格式错误', true);
-        return;
-      }
+      // 网络导入按钮事件
+      document.getElementById('networkImportBtn').onclick = () => {
+        el.networkUrl.value = '';
+        el.networkStatus.style.display = 'none';
+        el.modal.style.display = 'block';
+        el.networkUrl.focus();
+      };
       
-      utils.showStatus('', false);
-      document.getElementById('confirmImportBtn').disabled = true;
+      // 频道管理按钮事件
+      document.getElementById('groupBtn').onclick = () => {
+        state.selectedGroups = [...state.allGroups];
+        el.groupModal.style.display = 'block';
+        core.updateGroupCheckboxes();
+      };
       
-      try {
-        const text = await utils.fetchUrl(url);
-        if (!text) throw new Error('内容为空');
-        
-        const items = core.extractUrls(text);
-        if (items.length === 0) throw new Error('未找到有效URL');
-        
-        const result = core.addSources(items);
-        utils.showStatus(`导入${result.added}个直播源，新增${result.newGroups}个分组`, false);
-        core.update();
-        
-        setTimeout(() => {
-          if (el.modal.style.display === 'block') el.modal.style.display = 'none';
-        }, 2000);
-      } catch (e) {
-        let msg = '导入失败: ';
-        if (e.message.includes('失败')) msg += '无法访问URL';
-        else if (e.message.includes('fetch')) msg += '网络错误';
-        else msg += e.message;
-        utils.showStatus(msg, true);
-      }
+      // 关闭频道管理模态框
+      document.getElementById('closeGroupBtn').onclick = () => el.groupModal.style.display = 'none';
       
-      document.getElementById('confirmImportBtn').disabled = false;
-    };
-    
-    // 全选分组
-    document.getElementById('selectAllGroupsBtn').onclick = () => {
-      selectedGroups = [...allGroups];
-      core.updateGroupCheckboxes();
-    };
-    
-    // 取消全选分组
-    document.getElementById('deselectAllGroupsBtn').onclick = () => {
-      selectedGroups = [];
-      core.updateGroupCheckboxes();
-    };
-    
-    // 检测选中分组
-    document.getElementById('testSelectedGroupsBtn').onclick = async () => {
-      if (selectedGroups.length === 0) {
-        alert('请至少选择一个分组');
-        return;
-      }
-      
-      const sources = data.filter(i => selectedGroups.includes(i.group));
-      if (sources.length === 0) {
-        alert('选中的分组没有直播源');
-        return;
-      }
-      
-      const originalData = [...data];
-      data = sources;
-      await detector.start();
-      data = originalData;
-      core.update();
-      el.groupModal.style.display = 'none';
-    };
-    
-    // 列表选项卡点击事件
-    el.listTabs.addEventListener('click', (e) => {
-      const tab = e.target.closest('.list-tab');
-      if (tab) {
-        const filter = tab.getAttribute('data-filter');
-        if (filter) {
-          core.setFilter(filter);
-        }
-      }
-    });
-    
-    // 列表项勾选框事件委托 - 只对有效项处理
-    el.sourceList.addEventListener('change', (e) => {
-      if (e.target.classList.contains('source-checkbox')) {
-        const url = e.target.getAttribute('data-url');
-        const checked = e.target.checked;
-        core.handleCheckboxChange(url, checked);
-      }
-    });
-    
-    // 播放按钮事件委托
-    el.sourceList.addEventListener('click', (e) => {
-      if (e.target.classList.contains('play-btn') && !e.target.disabled) {
-        const url = e.target.getAttribute('data-url');
-        const item = core.findItemByUrl(url);
-        if (item) {
-          videoPlayer.play(item.url, item.channelName || item.group);
-        }
-      }
-    });
-    
-    el.groupCheckboxes.addEventListener('click', (e) => {
-      const groupItem = e.target.closest('.group-item');
-      if (groupItem) {
-        const group = groupItem.getAttribute('data-group');
-        if (group) core.toggleGroup(group);
-      }
-    });
-    
-    // 全部勾选按钮
-    el.selectAllBtn.onclick = () => {
-      core.selectAllCurrent();
-    };
-    
-    // 全部取消按钮
-    el.deselectAllBtn.onclick = () => {
-      core.deselectAllCurrent();
-    };
-    
-    // 导出勾选按钮 - 智能判断格式
-    el.exportSelectedBtn.onclick = () => {
-      core.exportSelected();
-    };
-    
-    el.modal.onclick = e => {
-      if (e.target === el.modal) {
+      // 取消网络导入
+      document.getElementById('cancelImportBtn').onclick = () => {
         el.modal.style.display = 'none';
         document.getElementById('confirmImportBtn').disabled = false;
-      }
-    };
-    
-    el.groupModal.onclick = e => {
-      if (e.target === el.groupModal) el.groupModal.style.display = 'none';
-    };
-    
-    core.update();
-  }
-};
-
-events.init();
+      };
+      
+      // 文件选择事件
+      el.fileInput.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = e => {
+          const items = core.extractUrls(e.target.result);
+          const result = core.addSources(items);
+          if (result.added > 0) {
+            alert(`导入${result.added}个直播源，新增${result.newGroups}个分组`);
+            core.update();
+          }
+        };
+        reader.readAsText(file);
+        el.fileInput.value = '';
+      };
+      
+      // 确认网络导入
+      document.getElementById('confirmImportBtn').onclick = async () => {
+        const url = el.networkUrl.value.trim();
+        const cleaned = utils.cleanUrl(url);
+        
+        if (!url) {
+          utils.showStatus('请输入URL', true);
+          return;
+        }
+        
+        if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+          utils.showStatus('URL格式错误', true);
+          return;
+        }
+        
+        utils.showStatus('', false);
+        document.getElementById('confirmImportBtn').disabled = true;
+        
+        try {
+          const text = await utils.fetchUrl(url);
+          if (!text) throw new Error('内容为空');
+          
+          const items = core.extractUrls(text);
+          if (items.length === 0) throw new Error('未找到有效URL');
+          
+          const result = core.addSources(items);
+          utils.showStatus(`导入${result.added}个直播源，新增${result.newGroups}个分组`, false);
+          core.update();
+          
+          setTimeout(() => {
+            if (el.modal.style.display === 'block') el.modal.style.display = 'none';
+          }, 2000);
+        } catch (e) {
+          let msg = '导入失败: ';
+          if (e.message.includes('失败')) msg += '无法访问URL';
+          else if (e.message.includes('fetch')) msg += '网络错误';
+          else msg += e.message;
+          utils.showStatus(msg, true);
+        }
+        
+        document.getElementById('confirmImportBtn').disabled = false;
+      };
+      
+      // 全选分组
+      document.getElementById('selectAllGroupsBtn').onclick = () => {
+        state.selectedGroups = [...state.allGroups];
+        core.updateGroupCheckboxes();
+      };
+      
+      // 取消全选分组
+      document.getElementById('deselectAllGroupsBtn').onclick = () => {
+        state.selectedGroups = [];
+        core.updateGroupCheckboxes();
+      };
+      
+      // 检测选中分组
+      document.getElementById('testSelectedGroupsBtn').onclick = async () => {
+        if (state.selectedGroups.length === 0) {
+          alert('请至少选择一个分组');
+          return;
+        }
+        
+        const sources = state.data.filter(i => state.selectedGroups.includes(i.group));
+        if (sources.length === 0) {
+          alert('选中的分组没有直播源');
+          return;
+        }
+        
+        const originalData = [...state.data];
+        data = sources;
+        await detector.start();
+        state.data = originalData;
+        core.update();
+        el.groupModal.style.display = 'none';
+      };
+      
+      // 列表选项卡点击事件
+      el.listTabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('.list-tab');
+        if (tab) {
+          const filter = tab.getAttribute('data-filter');
+          if (filter) {
+            core.setFilter(filter);
+          }
+        }
+      });
+      
+      // 列表项勾选框事件委托 - 只对有效项处理
+      el.sourceList.addEventListener('change', (e) => {
+        if (e.target.classList.contains('source-checkbox')) {
+          const url = e.target.getAttribute('data-url');
+          const checked = e.target.checked;
+          core.handleCheckboxChange(url, checked);
+        }
+      });
+      
+      // 播放按钮事件委托
+      el.sourceList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('play-btn') && !e.target.disabled) {
+          const url = e.target.getAttribute('data-url');
+          const item = core.findItemByUrl(url);
+          if (item) {
+            videoPlayer.play(item.url, item.channelName || item.group);
+          }
+        }
+      });
+      
+      // 分组复选框点击事件
+      el.groupCheckboxes.addEventListener('click', (e) => {
+        const groupItem = e.target.closest('.group-item');
+        if (groupItem) {
+          const group = groupItem.getAttribute('data-group');
+          if (group) core.toggleGroup(group);
+        }
+      });
+      
+      // 全部勾选按钮
+      el.selectAllBtn.onclick = () => {
+        core.selectAllCurrent();
+      };
+      
+      // 全部取消按钮
+      el.deselectAllBtn.onclick = () => {
+        core.deselectAllCurrent();
+      };
+      
+      // 导出勾选按钮 - 智能判断格式
+      el.exportSelectedBtn.onclick = () => {
+        core.exportSelected();
+      };
+      
+      // 模态框点击外部关闭
+      el.modal.onclick = e => {
+        if (e.target === el.modal) {
+          el.modal.style.display = 'none';
+          document.getElementById('confirmImportBtn').disabled = false;
+        }
+      };
+      
+      el.groupModal.onclick = e => {
+        if (e.target === el.groupModal) el.groupModal.style.display = 'none';
+      };
+      
+      core.update();
+    }
+  };
+  
+  events.init();
+})();
 </script>
 </body>
 </html>
