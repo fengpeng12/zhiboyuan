@@ -1,1749 +1,1409 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>直播源管理</title>
-<style>
-* {box-sizing: border-box;}
-body{margin:0;padding:10px;background:#f5f5f5;font-family:sans-serif}
-.container{width:100%;margin:0 auto}
-.header{text-align:center;padding:15px 10px;border-bottom:2px solid #007bff}
-.header h1{color:#007bff;margin:0;font-size:clamp(20px, 6vw, 28px)}
-.section{background:#fff;border-radius:8px;padding:15px;margin:15px 0}
-.info{padding:10px;background:#e9f5ff;border-radius:6px;margin-bottom:15px;font-size:clamp(16px, 4vw, 20px)}
-.info span{color:#007bff;font-weight:bold}
-.buttons{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.btn{
-    padding:12px 16px;
-    border-radius:8px;
-    border:none;
-    cursor:pointer;
-    flex:1;
-    min-width:calc(33.33% - 8px);
-    color:#fff;
-    font-size:clamp(16px, 4.5vw, 20px);
-    text-align:center;
-    font-weight:bold;
-    transition:all 0.2s ease;
-}
-.btn:hover{
-    transform:translateY(-2px);
-    box-shadow:0 4px 8px rgba(0,0,0,0.2);
-}
-.btn.blue{background:#007bff}
-.btn.red{background:#dc3545}
-.btn.green{background:#28a745}
-.btn.purple{background:#6f42c1}
-.btn.yellow{background:#ffc107;color:#333}
-.btn.gray{background:#6c757d}
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
-}
-.source-list{border:1px solid #ddd;border-radius:6px;padding:10px;max-height:50vh;overflow:auto}
-.source-item{padding:8px;margin-bottom:5px;background:#f8f9fa;border-radius:4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.channel-name{font-weight:bold;color:#333;min-width:120px;flex:1;font-size:clamp(14px, 3.5vw, 18px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.source-url{flex:2;word-break:break-all;font-size:clamp(12px, 3vw, 16px);color:#666;min-width:200px}
-.status-badge{padding:4px 8px;border-radius:4px;font-size:clamp(12px, 3vw, 16px);color:#fff;min-width:50px;text-align:center}
-.status-valid{background:#28a745}
-.status-invalid{background:#dc3545}
-.status-unknown{background:#6c757d}
-.empty-list{text-align:center;padding:30px;color:#999;font-size:clamp(16px, 5vw, 24px)}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000}
-.modal-content{background:#fff;border-radius:8px;width:95%;max-width:800px;margin:20px auto;max-height:90vh;display:flex;flex-direction:column}
-.modal-header{padding:15px 20px;background:#007bff;color:#fff;border-radius:8px 8px 0 0;font-size:clamp(18px, 5vw, 24px)}
-.modal-body{padding:20px;overflow:auto;flex:1}
-.modal-footer{padding:15px 20px;text-align:right}
-.url-input{width:100%;padding:12px;border:1px solid #ddd;border-radius:4px;margin-bottom:10px;font-size:clamp(16px, 4vw, 20px)}
-.status{padding:10px;border-radius:4px;margin:10px 0;display:none;font-size:clamp(14px, 3.5vw, 18px)}
-.status.success{background:#d4edda;color:#155724}
-.status.error{background:#f8d7da;color:#721c24}
-.group-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(120px, 1fr));gap:12px;margin-top:15px}
-.group-item{padding:12px;border:1px solid #ddd;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;transition:all 0.2s ease}
-.group-item:hover{background:#f8f9fa;transform:translateY(-2px);box-shadow:0 2px 4px rgba(0,0,0,0.1)}
-.group-item.selected{background:#e9f5ff;border-color:#007bff;box-shadow:0 0 0 2px rgba(0,123,255,0.3)}
-.group-name{font-weight:bold;color:#007bff;font-size:clamp(14px, 3.5vw, 18px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;margin-bottom:4px}
-.group-count{color:#666;font-size:clamp(13px, 3vw, 16px);font-weight:bold}
-.group-checkbox{width:22px;height:22px;cursor:pointer;margin-bottom:10px}
-.control-panel{margin:15px 0;padding:15px;background:#f8f9fa;border-radius:6px;border:1px solid #ddd}
-.control-row{display:flex;flex-wrap:wrap;align-items:center;margin:12px 0;gap:12px}
-.control-label{min-width:140px;font-weight:bold;color:#333;font-size:clamp(14px, 3.5vw, 18px);flex:1}
-.control-slider{flex:2;min-width:150px;height:12px;}
-.control-value{min-width:70px;text-align:right;color:#007bff;font-weight:bold;font-size:clamp(14px, 3.5vw, 18px)}
-.progress-bar{width:100%;height:10px;background:#e9ecef;border-radius:4px;overflow:hidden;margin-top:12px}
-.progress-fill{height:100%;background:#007bff;width:0%;transition:width 0.3s}
-.detection-stats{display:grid;grid-template-columns:repeat(auto-fit, minmax(90px, 1fr));gap:12px;margin-top:12px;font-size:clamp(14px, 3.5vw, 18px)}
-.stat-item{display:flex;flex-direction:column;align-items:center}
-.stat-value{font-weight:bold;color:#007bff;font-size:clamp(16px, 4vw, 24px)}
-.stat-label{font-size:clamp(13px, 3vw, 16px);color:#666}
-.status-container{display:flex;flex-direction:column;align-items:flex-end;min-width:120px;flex-shrink:0}
-.detection-time{font-size:clamp(12px, 2.5vw, 14px);color:#666;margin-top:2px;font-family:monospace}
-.detection-time.valid{color:#28a745}
-.detection-time.invalid{color:#dc3545}
-.detection-time.unknown{color:#6c757d}
-.filter-buttons{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
-.filter-btn{
-    padding:8px 16px;
-    border-radius:8px;
-    border:1px solid #ddd;
-    background:#fff;
-    cursor:pointer;
-    color:#666;
-    font-size:clamp(14px, 3.5vw, 18px);
-    flex:1;
-    text-align:center;
-    min-width:90px;
-    font-weight:bold;
-    transition:all 0.2s ease;
-}
-.filter-btn:hover{
-    background:#f8f9fa;
-    transform:translateY(-2px);
-}
-.filter-btn.active{
-    background:#007bff;
-    color:#fff;
-    border-color:#007bff;
-    box-shadow:0 2px 4px rgba(0,123,255,0.3);
-}
-.filter-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
-}
-.source-checkbox{width:22px;height:22px;cursor:pointer;flex-shrink:0}
-.source-checkbox-label{display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0}
-.selected-count{font-size:clamp(13px, 3vw, 16px);color:#007bff;margin-left:12px;font-weight:bold}
-.list-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;gap:12px}
-.list-title{font-weight:bold;color:#333;font-size:clamp(14px, 3.5vw, 18px);flex:1}
-.list-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.btn.small{
-    padding:8px 14px;
-    font-size:clamp(14px, 3.5vw, 18px);
-    min-width:auto;
-    font-weight:bold;
-}
-.play-btn{
-    padding:6px 12px;
-    background:#6c757d;
-    color:#fff;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:clamp(14px, 3.5vw, 18px);
-    min-width:70px;
-    flex-shrink:0;
-    text-align:center;
-    font-weight:bold;
-    transition:all 0.2s ease;
-}
-.play-btn:hover{
-    background:#5a6268;
-    transform:translateY(-2px);
-}
-.play-btn.playing{background:#28a745}
-.play-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-    background: #6c757d !important;
-}
-.video-preview{
-    display: block;
-    position: relative;
-    background:#fff;
-    border-radius:8px;
-    border:1px solid #ddd;
-    margin:15px 0;
-    overflow:hidden;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-.video-container{
-    width:100%;
-    display:flex;
-    flex-direction:column;
-}
-.video-header{
-    padding:12px 18px;
-    background:#007bff;
-    color:#fff;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid rgba(255,255,255,0.2);
-}
-.video-title{
-    color:#fff;
-    font-size:clamp(16px, 4vw, 20px);
-    font-weight:bold;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    max-width:70%;
-}
-.video-controls{
-    display:flex;
-    gap:10px;
-    align-items:center;
-}
-.video-body{
-    flex:1;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    padding:12px;
-    background:#000;
-    min-height:300px;
-    max-height:600px;
-}
-#previewVideo{
-    width:100%;
-    height:auto;
-    max-height:580px;
-    object-fit:contain;
-}
-.video-placeholder {
-    color: #999;
-    font-size: clamp(16px, 4vw, 20px);
-    text-align: center;
-    padding: 20px;
-}
-@media (max-width: 768px) {
-    .video-body {
-        min-height: 250px;
-        max-height: 400px;
-    }
-    #previewVideo {
-        max-height: 380px;
-    }
-    .btn {
-        padding: 10px 12px;
-    }
-    .btn.small {
-        padding: 6px 10px;
-    }
-    .group-grid {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 8px;
-    }
-    .group-item {
-        padding: 8px;
-    }
-}
-#networkModal .modal-content {
-    max-width: 800px;
-}
-#groupModal .modal-content {
-    max-width: 900px;
-}
-#groupModal .modal-body {
-    padding: 25px;
-}
-#groupModal .group-container p {
-    font-size: clamp(16px, 4vw, 20px);
-    margin-bottom: 20px;
-    font-weight: bold;
-}
-#groupModal .modal-footer {
-    padding: 20px 25px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>直播源导入工具</title>
+    <style>
+        *{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+        body{margin:0;padding:15px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f7;color:#333;line-height:1.5}
+        .container{max-width:100%;margin:0 auto}
+        .header{text-align:center;margin-bottom:25px;padding:15px 0}
+        h1{font-size:24px;font-weight:600;margin:0 0 8px 0;color:#007bff}
+        .description{font-size:14px;color:#666;margin:0}
+        .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+        .stat-card{background:white;border-radius:12px;padding:15px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+        .stat-value{display:block;font-size:24px;font-weight:700;color:#007bff;margin-bottom:5px}
+        .stat-label{font-size:13px;color:#666}
+        .buttons{display:flex;gap:10px;margin-bottom:20px}
+        .btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;cursor:pointer;transition:transform 0.2s}
+        .btn:active{transform:scale(0.98)}
+        .btn.blue{background:#007bff;color:white}
+        .btn.purple{background:#6f42c1;color:white}
+        .btn.green{background:#28a745;color:white}
+        .btn.gray{background:#6c757d;color:white}
+        .btn.orange{background:#fd7e14;color:white}
+        .btn.red{background:#dc3545;color:white}
+        .btn.yellow{background:#ffc107;color:#333}
+        .results-section{background:white;border-radius:12px;padding:15px;margin-top:15px;box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+        .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px}
+        .results-title{font-size:18px;font-weight:600;color:#333}
+        .results-filter-buttons{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
+        .filter-btn{padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;color:#333;font-size:14px;cursor:pointer;transition:all 0.2s}
+        .filter-btn:hover{border-color:#007bff;color:#007bff}
+        .filter-btn.active{background:#007bff;color:white;border-color:#007bff}
+        .results-list{max-height:400px;overflow-y:auto;border:1px solid #eee;border-radius:8px;margin-bottom:15px}
+        .result-item{padding:12px;border-bottom:1px solid #f0f0f0;display:flex;align-items:flex-start;gap:12px}
+        .result-item:last-child{border-bottom:none}
+        .channel-checkbox{flex-shrink:0;margin-top:2px}
+        .channel-info{flex:1;min-width:0}
+        .channel-name{font-weight:700;font-size:16px;color:#333;margin-bottom:5px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+        .channel-url{font-size:11px;color:#666;word-break:break-all;margin-bottom:8px;line-height:1.4}
+        .channel-group{display:inline-block;padding:3px 8px;background:#e9f5ff;color:#007bff;border-radius:12px;font-size:12px;margin-right:5px}
+        .channel-status{display:inline-block;padding:3px 8px;border-radius:12px;font-size:12px}
+        .status-valid{background:#d4edda;color:#155724}
+        .status-invalid{background:#f8d7da;color:#721c24}
+        .status-checking{background:#fff3cd;color:#856404}
+        .empty-list{text-align:center;padding:30px 20px;color:#999}
+        .pagination-controls{display:flex;justify-content:space-between;align-items:center;margin-top:15px;padding:10px 0;border-top:1px solid #eee;flex-wrap:wrap;gap:10px}
+        .page-size-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .page-size-label{font-size:14px;color:#666;white-space:nowrap}
+        .page-size-input{width:70px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;text-align:center}
+        .page-size-input:focus{outline:none;border-color:#007bff}
+        .pagination-info{font-size:14px;color:#666;text-align:center;flex-grow:1}
+        .pagination-buttons{display:flex;gap:8px;align-items:center}
+        .page-btn{padding:8px 14px;border:1px solid #ddd;border-radius:6px;background:white;color:#333;font-size:14px;cursor:pointer;transition:all 0.2s;min-width:40px;text-align:center}
+        .page-btn:active{transform:scale(0.95)}
+        .page-btn:hover{border-color:#007bff;color:#007bff}
+        .page-btn.active{background:#007bff;color:white;border-color:#007bff}
+        .page-btn:disabled{opacity:0.5;cursor:not-allowed;border-color:#ddd;color:#999}
+        .check-actions{display:flex;justify-content:space-between;align-items:center;margin-top:15px;padding:10px 0;border-top:1px solid #eee;flex-wrap:wrap;gap:10px}
+        .checkbox-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .export-actions{display:flex;gap:8px;flex-wrap:wrap}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000}
+        .modal-content{position:absolute;bottom:0;left:0;width:100%;background:white;border-radius:20px 20px 0 0;animation:slideUp 0.3s ease;max-height:80vh;overflow-y:auto}
+        @keyframes slideUp{from{transform:translateY(100%)} to{transform:translateY(0)}}
+        .modal-header{padding:20px;border-bottom:1px solid #eee;text-align:center}
+        .modal-title{font-size:18px;font-weight:600;color:#333;margin:0}
+        .modal-body{padding:20px}
+        .modal-footer{padding:20px;display:flex;gap:10px;border-top:1px solid #eee}
+        .url-input{width:100%;padding:14px;border:1px solid #ddd;border-radius:8px;font-size:16px;margin-bottom:15px}
+        .url-input:focus{outline:none;border-color:#007bff}
+        .status{padding:10px;border-radius:8px;margin-bottom:15px;display:none;font-size:14px}
+        .status.success{background:#d4edda;color:#155724}
+        .status.error{background:#f8d7da;color:#721c24}
+        .examples{font-size:13px;color:#666;margin-top:15px}
+        .example-url{background:#f8f9fa;border-radius:6px;padding:8px;margin:5px 0;font-family:monospace;font-size:12px;word-break:break-all}
+        .group-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+        .group-item{padding:15px;border:1px solid #ddd;border-radius:12px;cursor:pointer;text-align:center;transition:all 0.2s}
+        .group-item.selected{background:#e9f5ff;border-color:#007bff}
+        .group-name{font-weight:600;color:#007bff;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .group-count{font-size:12px;color:#666}
+        .loading{text-align:center;padding:20px;display:none}
+        .loading-spinner{width:40px;height:40px;border:3px solid #f3f3f3;border-top:3px solid #007bff;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .formats{font-size:14px;color:#666;margin-top:15px}
+        .format-code{background:#f8f9fa;border-radius:6px;padding:8px;margin:5px 0;font-family:monospace;font-size:13px}
+        .file-input-label{display:block;padding:20px;background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;text-align:center;color:#666;cursor:pointer;margin-bottom:10px}
+        input[type="file"]{display:none}
+        /* 新增检测相关样式 */
+        .check-controls{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+        .check-buttons{display:flex;gap:10px}
+        .check-configs{display:flex;flex-direction:column;gap:12px;background:white;padding:15px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+        .config-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .config-label{font-size:14px;color:#666;white-space:nowrap}
+        .config-slider{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:#e9ecef;border-radius:3px;outline:none;min-width:100px}
+        .config-slider::-webkit-slider-thumb{width:18px;height:18px;-webkit-appearance:none;appearance:none;background:#007bff;border-radius:50%;cursor:pointer}
+        .config-value{font-size:14px;font-weight:600;color:#007bff;min-width:40px}
+        .check-progress{background:white;border-radius:12px;padding:15px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:none}
+        .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .progress-title{font-size:16px;font-weight:600;color:#333}
+        .progress-stats{font-size:14px;color:#666}
+        .progress-bar{width:100%;height:8px;background:#e9ecef;border-radius:4px;overflow:hidden}
+        .progress-fill{height:100%;background:#007bff;border-radius:4px;transition:width 0.3s ease;width:0%}
+        .progress-details{margin-top:10px;font-size:13px;color:#666}
+        /* 播放按钮样式 */
+        .play-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#28a745;color:white;border:none;border-radius:50%;font-size:12px;cursor:pointer;padding:0;margin-left:5px;transition:transform 0.2s}
+        .play-btn:hover{transform:scale(1.1);background:#218838}
+        .play-btn:active{transform:scale(0.95)}
+        /* 内嵌视频播放器样式 - 增大视频显示 */
+        .video-preview-container{background:white;border-radius:12px;padding:20px;margin-top:15px;box-shadow:0 4px 12px rgba(0,0,0,0.08);display:block; /* 改为block，默认显示 */}
+        .video-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .video-preview-title{font-size:20px;font-weight:600;color:#333;margin:0}
+        .video-preview-close{background:#6c757d;border:none;color:white;font-size:20px;cursor:pointer;padding:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+        .video-preview-body{position:relative;background:#000;border-radius:8px;overflow:hidden;width:100%;height:500px;display:flex;justify-content:center;align-items:center}
+        #videoPlayer{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;display:none} /* 初始隐藏 */
+        .video-loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:18px;display:none}
+        .video-info{padding:20px 0 0;border-top:1px solid #eee;margin-top:20px}
+        .video-info-url{font-size:14px;color:#666;word-break:break-all;margin:0}
+        .video-controls{display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:10px}
+        .video-channel-info{font-size:16px;color:#333;font-weight:500;margin-bottom:5px}
+        .video-control-buttons{display:flex;gap:10px}
+        .video-control-btn{padding:8px 16px;border:1px solid #ddd;border-radius:8px;background:white;color:#333;font-size:14px;cursor:pointer;font-weight:500}
+        .video-control-btn:hover{border-color:#007bff;color:#007bff}
+        .video-control-btn.red{background:#dc3545;color:white;border-color:#dc3545}
+        .video-control-btn.red:hover{background:#c82333;border-color:#bd2130}
+        .video-status{font-size:13px;color:#666;margin-top:5px}
+        /* 新增：视频预览初始状态占位符 */
+        .video-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#999;font-size:16px;text-align:center;display:block}
+        /* 新增：有效结果勾选控制区域样式 */
+        .valid-selection-controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding:10px;background:#f8f9fa;border-radius:8px;flex-wrap:wrap;gap:10px}
+        .valid-selection-info{font-size:14px;color:#333}
+        .valid-selection-buttons{display:flex;gap:8px}
+        .valid-selection-btn{padding:6px 12px;border:1px solid #ddd;border-radius:6px;background:white;color:#333;font-size:13px;cursor:pointer;font-weight:500}
+        .valid-selection-btn:hover{border-color:#007bff;color:#007bff}
+        .valid-selection-btn.yellow{background:#ffc107;color:#333;border-color:#ffc107}
+        .valid-selection-btn.yellow:hover{background:#e0a800;border-color:#d39e00}
+        /* 勾选框样式 */
+        .result-checkbox{width:18px;height:18px;cursor:pointer}
+        @media (max-width:1024px){
+            .video-preview-body{height:450px}
+        }
+        @media (max-width:768px){
+            .video-preview-body{height:400px}
+            .video-preview-title{font-size:18px}
+            .video-channel-info{font-size:14px}
+            .valid-selection-controls{flex-direction:column;align-items:stretch}
+            .valid-selection-buttons{justify-content:center}
+        }
+        @media (max-width:480px){
+            .pagination-controls{flex-direction:column;align-items:stretch}
+            .page-size-control{justify-content:center}
+            .pagination-buttons{justify-content:center}
+            .check-buttons{flex-direction:column}
+            .config-row{flex-direction:column;align-items:stretch;gap:10px}
+            .video-preview-body{height:350px}
+            .video-controls{flex-direction:column;align-items:flex-start}
+            .video-preview-title{font-size:16px}
+            .video-channel-info{font-size:14px}
+            .results-filter-buttons{flex-wrap:wrap}
+            .filter-btn{flex:1;min-width:100px}
+            .check-actions{flex-direction:column;align-items:stretch}
+            .checkbox-controls{justify-content:center}
+            .export-actions{justify-content:center}
+            .valid-selection-buttons{flex-direction:column}
+            .valid-selection-btn{width:100%;text-align:center}
+        }
+        @media (min-width:1400px){
+            .video-preview-body{height:550px}
+        }
+        @media (min-width:1600px){
+            .video-preview-body{height:600px}
+        }
+        @media (orientation: landscape) and (max-width: 900px){
+            .video-preview-body{height:300px}
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-  <div class="header"><h1>直播源管理</h1></div>
-  
-  <div class="section">
-    <div class="info">已导入 <span id="totalCount">0</span> 个直播源 | <span id="groupCount">0</span> 个分组</div>
-    <div class="buttons">
-      <button class="btn blue" id="localImportBtn">本地导入</button>
-      <button class="btn purple" id="networkImportBtn">网络导入</button>
-      <button class="btn yellow" id="groupBtn">频道管理</button>
-    </div>
-  </div>
-  
-  <div class="section" id="detectionPanel">
-    <div class="control-panel">
-      <div class="info">直播源检测控制</div>
-      
-      <div class="control-row">
-        <span class="control-label">检测超时(秒):</span>
-        <input type="range" class="control-slider" id="timeoutSlider" min="1" max="20" value="5">
-        <span class="control-value" id="timeoutValue">5秒</span>
-      </div>
-      
-      <div class="control-row">
-        <span class="control-label">检测间隔(毫秒):</span>
-        <input type="range" class="control-slider" id="delaySlider" min="10" max="1000" value="200">
-        <span class="control-value" id="delayValue">200ms</span>
-      </div>
-      
-      <div class="control-row">
-        <span class="control-label">并发数量:</span>
-        <input type="range" class="control-slider" id="concurrencySlider" min="3" max="50" value="10">
-        <span class="control-value" id="concurrencyValue">10个</span>
-      </div>
-      
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      
-      <div class="detection-stats">
-        <div class="stat-item">
-          <span class="stat-value" id="processedCount">0</span>
-          <span class="stat-label">已处理</span>
+    <div class="container">
+        <header class="header">
+            <h1>直播源导入工具</h1>
+            <p class="description">快速导入和管理直播源</p>
+        </header>
+        
+        <div class="stats">
+            <div class="stat-card"><span class="stat-value" id="totalCount">0</span><span class="stat-label">总直播源</span></div>
+            <div class="stat-card"><span class="stat-value" id="groupCount">0</span><span class="stat-label">分组数量</span></div>
+            <div class="stat-card"><span class="stat-value" id="uniqueCount">0</span><span class="stat-label">唯一源数</span></div>
+            <div class="stat-card"><span class="stat-value" id="duplicateCount">0</span><span class="stat-label">重复源数</span></div>
         </div>
-        <div class="stat-item">
-          <span class="stat-value" id="validDetectedCount">0</span>
-          <span class="stat-label">有效</span>
+        
+        <!-- 新增检测控制区域 -->
+        <div class="check-controls">
+            <div class="check-buttons">
+                <button class="btn orange" id="checkPageBtn">检测当前页</button>
+                <button class="btn orange" id="checkAllBtn">检测全部页</button>
+                <button class="btn orange" id="checkGroupBtn">分组检测</button>
+                <button class="btn red" id="stopCheckBtn" style="display:none">停止检测</button>
+            </div>
+            
+            <!-- 检测配置区域 -->
+            <div class="check-configs">
+                <div class="config-row">
+                    <span class="config-label">检测超时:</span>
+                    <input type="range" id="timeoutSlider" class="config-slider" min="3" max="20" value="8">
+                    <span id="timeoutValue" class="config-value">8秒</span>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">并发数量:</span>
+                    <input type="range" id="concurrencySlider" class="config-slider" min="1" max="30" value="5">
+                    <span id="concurrencyValue" class="config-value">5个</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span id="checkStatusText" style="font-size:13px;color:#666">就绪</span>
+                    <span id="concurrentStatus" style="font-size:12px;color:#007bff;background:#e9f5ff;padding:2px 8px;border-radius:10px">并发:5个</span>
+                </div>
+            </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-value" id="invalidDetectedCount">0</span>
-          <span class="stat-label">失效</span>
+        
+        <!-- 新增检测进度显示 -->
+        <div class="check-progress" id="checkProgress">
+            <div class="progress-header">
+                <div class="progress-title">检测进度</div>
+                <div class="progress-stats">
+                    <span id="checkProgressText">准备中...</span>
+                    <span id="checkCancelBtn" style="margin-left:10px;color:#dc3545;cursor:pointer;font-size:12px">[取消]</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-details">
+                <span id="checkDetails">等待开始检测...</span>
+            </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-value" id="speedValue">0</span>
-          <span class="stat-label">个/秒</span>
+        
+        <div class="buttons">
+            <button class="btn blue" id="localImportBtn">本地导入</button>
+            <button class="btn purple" id="networkImportBtn">网络导入</button>
+            <button class="btn green" id="groupBtn">分组管理</button>
         </div>
-        <div class="stat-item">
-          <span class="stat-value" id="avgTimeValue">0ms</span>
-          <span class="stat-label">平均耗时</span>
+        
+        <!-- 内嵌视频播放器 - 移到结果区域上方并保持显示，增大视频显示 -->
+        <div class="video-preview-container" id="videoPreview">
+            <div class="video-preview-header">
+                <h3 class="video-preview-title">视频预览</h3>
+                <button class="video-preview-close" id="closeVideoBtn">×</button>
+            </div>
+            <div class="video-preview-body">
+                <div class="video-placeholder" id="videoPlaceholder">视频预览区域，点击播放按钮开始预览</div>
+                <video id="videoPlayer" controls preload="metadata" playsinline>
+                    <source id="videoSource" src="" type="application/x-mpegURL">
+                    您的浏览器不支持视频播放
+                </video>
+                <div class="video-loading" id="videoLoading">加载中...</div>
+            </div>
+            <div class="video-info">
+                <p class="video-channel-info" id="videoTitle">未选择频道</p>
+                <p class="video-info-url" id="videoUrl">URL: 无</p>
+                <div class="video-controls">
+                    <div class="video-status" id="videoStatus">就绪</div>
+                    <div class="video-control-buttons">
+                        <button class="video-control-btn" id="reloadVideoBtn">重新加载</button>
+                        <button class="video-control-btn red" id="stopVideoBtn">停止播放</button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      
-      <div class="buttons">
-        <button class="btn green" id="testBtn">开始检测</button>
-        <button class="btn red" id="clearBtn">清空列表</button>
-      </div>
-    </div>
-  </div>
-  
-  <div class="video-preview" id="videoPreview">
-    <div class="video-container">
-      <div class="video-header">
-        <div class="video-title" id="videoTitle">视频预览</div>
-        <div class="video-controls">
-          <button class="btn red small" id="closeVideoBtn">停止</button>
+        
+        <div class="results-section">
+            <div class="results-header">
+                <h3 class="results-title">导入结果</h3>
+                <div>
+                    <button class="btn gray" id="clearBtn" style="padding:8px 12px;font-size:14px">清空</button>
+                </div>
+            </div>
+            
+            <!-- 新增筛选按钮 -->
+            <div class="results-filter-buttons">
+                <button class="filter-btn active" id="filterAllBtn">全部结果</button>
+                <button class="filter-btn" id="filterValidBtn">有效结果</button>
+                <button class="filter-btn" id="filterInvalidBtn">无效结果</button>
+            </div>
+            
+            <!-- 新增有效结果勾选控制区域 -->
+            <div class="valid-selection-controls" id="validSelectionControls" style="display:none">
+                <div class="valid-selection-info">
+                    已选择 <span id="selectedValidCount">0</span> 个有效源 / 共 <span id="totalValidCount">0</span> 个有效源
+                </div>
+                <div class="valid-selection-buttons">
+                    <button class="valid-selection-btn" id="selectAllValidBtn">全部勾选</button>
+                    <button class="valid-selection-btn" id="deselectAllValidBtn">全部取消</button>
+                    <button class="valid-selection-btn yellow" id="exportValidSelectedBtn">导出勾选的有效源</button>
+                </div>
+            </div>
+            
+            <div class="results-list" id="resultsList">
+                <div class="empty-list">暂无数据，请导入直播源</div>
+            </div>
+            
+            <!-- 新增勾选控制区域 -->
+            <div class="check-actions" id="checkActions" style="display:none">
+                <div class="checkbox-controls">
+                    <input type="checkbox" id="selectAllCheckbox" checked>
+                    <label for="selectAllCheckbox" style="font-size:14px;color:#333;cursor:pointer">全选当前页</label>
+                    <span style="font-size:13px;color:#666;margin-left:10px">
+                        已选择 <span id="selectedCount">0</span> / <span id="totalCheckCount">0</span> 个
+                    </span>
+                </div>
+                <div class="export-actions">
+                    <button class="btn yellow" id="exportSelectedBtn" style="padding:8px 12px;font-size:14px">导出勾选源</button>
+                </div>
+            </div>
+            
+            <div class="pagination-controls" id="paginationControls" style="display:none">
+                <div class="page-size-control">
+                    <span class="page-size-label">每页显示:</span>
+                    <input type="number" id="pageSizeInput" class="page-size-input" min="5" max="100" value="10">
+                    <span class="page-size-label">条</span>
+                </div>
+                <div class="pagination-info" id="paginationInfo">
+                    第 <span id="currentPage">1</span> 页 / 共 <span id="totalPages">1</span> 页
+                </div>
+                <div class="pagination-buttons">
+                    <button class="page-btn" id="firstPageBtn" title="首页">«</button>
+                    <button class="page-btn" id="prevPageBtn" title="上一页">‹</button>
+                    <div id="pageNumbers" style="display:flex;gap:4px"></div>
+                    <button class="page-btn" id="nextPageBtn" title="下一页">›</button>
+                    <button class="page-btn" id="lastPageBtn" title="末页">»</button>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="video-body" id="videoBody">
-        <div class="video-placeholder" id="videoPlaceholder">
-          点击播放按钮开始预览视频
-        </div>
-        <video id="previewVideo" controls style="display:none"></video>
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <div class="list-header">
-      <div class="list-title"><span id="sourceCount">0个直播源</span> | <span id="uniqueCount">0个唯一源</span> | <span id="validCount">0个有效</span> | <span id="invalidCount">0个失效</span></div>
-      <div class="list-actions">
-        <span id="selectedCount" class="selected-count" style="display:none">已选: 0</span>
-        <button class="btn blue small" id="selectAllValidBtn" style="display:none;padding:6px 12px">全部勾选</button>
-        <button class="btn gray small" id="deselectAllValidBtn" style="display:none;padding:6px 12px">全部不勾选</button>
-        <button class="btn blue small" id="exportValidBtn" style="display:none;padding:6px 12px">导出选中</button>
-      </div>
     </div>
     
-    <div class="filter-buttons">
-      <button class="filter-btn active" data-filter="all" id="filterAllBtn">全部</button>
-      <button class="filter-btn" data-filter="valid" id="filterValidBtn">有效</button>
-      <button class="filter-btn" data-filter="invalid" id="filterInvalidBtn">失效</button>
+    <!-- 网络导入模态框 -->
+    <div class="modal" id="networkModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">网络导入</h3>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="networkUrl" class="url-input" placeholder="输入直播源URL地址">
+                <div id="networkStatus" class="status"></div>
+                <div class="examples">
+                    <p><strong>示例：</strong></p>
+                    <div class="example-url">http://example.com/channels.txt</div>
+                    <div class="example-url">https://raw.githubusercontent.com/user/repo/channels.m3u</div>
+                    <p>支持.txt/.m3u/.m3u8格式</p>
+                </div>
+                <div class="formats">
+                    <p><strong>支持格式：</strong></p>
+                    <div class="format-code">频道名称,URL地址</div>
+                    <div class="format-code">分组名称,#genre#分组名称</div>
+                </div>
+                <div class="loading" id="networkLoading">
+                    <div class="loading-spinner"></div>
+                    <p>正在下载并解析...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn gray" id="cancelImportBtn">取消</button>
+                <button class="btn blue" id="confirmImportBtn">导入</button>
+            </div>
+        </div>
     </div>
     
-    <div class="source-list" id="sourceList">
-      <div class="empty-list">暂无直播源，请使用上方导入功能</div>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="networkModal">
-  <div class="modal-content">
-    <div class="modal-header">网络导入</div>
-    <div class="modal-body">
-      <input type="text" id="networkUrl" class="url-input" placeholder="输入URL地址">
-      <div id="networkStatus" class="status"></div>
-      <div style="font-size:clamp(13px, 3vw, 16px);color:#666">
-        <p><strong>示例：</strong></p>
-        <p style="font-size:clamp(12px, 2.5vw, 14px);word-break:break-all">http:\/\/ybtvsg.yuanbaotv.com\/api\/zip\/txtzztv\/202511061613\/kds_all_shlt_a160216bf6b3c6054c4a71d40132931c.txt</p>
-        <p style="font-size:clamp(12px, 2.5vw, 14px);word-break:break-all">https://gitee.com/messy-in-the-win/tv/raw/master/%E5%90%88%E5%B9%B6%E5%9C%B0%E6%96%B9%E5%8F%B0.txt</p>
-        <p>支持.txt/.m3u/.m3u8格式</p>
-        <p><strong>支持格式：</strong></p>
-        <p>1. 标准格式：频道名称,URL</p>
-        <p>2. M3U格式：<br>#EXTINF:-1 tvg-name="频道名" group-title="分组",频道名<br>http://example.com/stream.m3u8</p>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn gray" id="cancelImportBtn">取消</button>
-      <button class="btn blue" id="confirmImportBtn">导入</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="groupModal">
-  <div class="modal-content">
-    <div class="modal-header">频道管理</div>
-    <div class="modal-body">
-      <div class="group-container">
-        <p style="font-size:clamp(16px, 4vw, 20px); margin-bottom: 20px; font-weight: bold;">选择要检测的分组（可多选）：</p>
-        <div class="group-grid" id="groupCheckboxes"></div>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:25px;justify-content:center">
-          <button class="btn blue" id="selectAllGroupsBtn" style="min-width:150px">全选分组</button>
-          <button class="btn gray" id="deselectAllGroupsBtn" style="min-width:150px">取消全选</button>
+    <!-- 分组管理模态框 -->
+    <div class="modal" id="groupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">分组管理</h3>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:15px">选择分组（可多选）：</p>
+                <div class="group-grid" id="groupCheckboxes"></div>
+                <div style="display:flex;gap:10px;margin-top:20px">
+                    <button class="btn blue" id="selectAllGroupsBtn">全选</button>
+                    <button class="btn gray" id="deselectAllGroupsBtn">取消全选</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn gray" id="closeGroupBtn">关闭</button>
+            </div>
         </div>
-      </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn gray" id="closeGroupBtn">关闭</button>
-      <button class="btn green" id="testSelectedGroupsBtn" style="min-width:180px">检测选中分组</button>
-    </div>
-  </div>
-</div>
-
-<input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" style="display:none">
+    
+    <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8">
 
 <script>
-// 使用立即执行函数封装，避免全局变量污染
-(function() {
-  // 缓存DOM元素引用
-  const DOM_CACHE = {};
-  
-  // 性能优化：使用requestAnimationFrame批量更新DOM
-  let updateQueue = [];
-  let updateAnimationFrameId = null;
-  
-  const scheduleUpdate = (fn) => {
-    updateQueue.push(fn);
-    if (!updateAnimationFrameId) {
-      updateAnimationFrameId = requestAnimationFrame(() => {
-        while (updateQueue.length) {
-          updateQueue.shift()();
+(function(){
+const state={
+    data:[],
+    groups:new Set(),
+    importData:{groupInfo:{},sources:{}},
+    selectedGroups:[],
+    duplicates:0,
+    pagination:{currentPage:1,pageSize:10,totalPages:1},
+    // 新增状态
+    checkStatus:{}, // 存储检测状态
+    checking:false, // 是否正在检测
+    currentCheckMode:'', // 当前检测模式: 'currentPage', 'allPages' 或 'group'
+    checkTimeout:8, // 默认检测超时时间(秒)
+    concurrency:5, // 默认并发数量
+    allPagesCheckQueue:[], // 全页检测队列
+    currentPageCheckIndex:0, // 当前页检测索引
+    // 视频播放状态
+    currentPlayingUrl:'', // 当前播放的URL
+    currentPlayingName:'', // 当前播放的频道名称
+    isVideoPlaying:false, // 视频是否正在播放
+    // 新增：有效结果勾选状态
+    selectedValidUrls:new Set() // 存储勾选的有效频道URL
+};
+
+const e=id=>document.getElementById(id);
+const els={
+    totalCount:e('totalCount'),groupCount:e('groupCount'),uniqueCount:e('uniqueCount'),duplicateCount:e('duplicateCount'),
+    localImportBtn:e('localImportBtn'),networkImportBtn:e('networkImportBtn'),groupBtn:e('groupBtn'),clearBtn:e('clearBtn'),
+    resultsList:e('resultsList'),networkModal:e('networkModal'),networkUrl:e('networkUrl'),networkStatus:e('networkStatus'),networkLoading:e('networkLoading'),
+    cancelImportBtn:e('cancelImportBtn'),confirmImportBtn:e('confirmImportBtn'),groupModal:e('groupModal'),groupCheckboxes:e('groupCheckboxes'),
+    selectAllGroupsBtn:e('selectAllGroupsBtn'),deselectAllGroupsBtn:e('deselectAllGroupsBtn'),closeGroupBtn:e('closeGroupBtn'),
+    fileInput:e('fileInput'),paginationControls:e('paginationControls'),pageSizeInput:e('pageSizeInput'),
+    currentPage:e('currentPage'),totalPages:e('totalPages'),paginationInfo:e('paginationInfo'),firstPageBtn:e('firstPageBtn'),prevPageBtn:e('prevPageBtn'),
+    pageNumbers:e('pageNumbers'),nextPageBtn:e('nextPageBtn'),lastPageBtn:e('lastPageBtn'),
+    // 新增元素
+    checkPageBtn:e('checkPageBtn'),checkAllBtn:e('checkAllBtn'),checkGroupBtn:e('checkGroupBtn'),stopCheckBtn:e('stopCheckBtn'),
+    timeoutSlider:e('timeoutSlider'),timeoutValue:e('timeoutValue'),concurrencySlider:e('concurrencySlider'),concurrencyValue:e('concurrencyValue'),
+    checkProgress:e('checkProgress'),progressFill:e('progressFill'),checkProgressText:e('checkProgressText'),
+    checkDetails:e('checkDetails'),checkCancelBtn:e('checkCancelBtn'),checkStatusText:e('checkStatusText'),
+    concurrentStatus:e('concurrentStatus'),
+    // 内嵌视频播放器元素
+    videoPreview:e('videoPreview'),videoPlayer:e('videoPlayer'),videoSource:e('videoSource'),
+    videoTitle:e('videoTitle'),videoUrl:e('videoUrl'),closeVideoBtn:e('closeVideoBtn'),
+    videoLoading:e('videoLoading'),reloadVideoBtn:e('reloadVideoBtn'),stopVideoBtn:e('stopVideoBtn'),
+    videoStatus:e('videoStatus'),videoPlaceholder:e('videoPlaceholder'),
+    // 新增筛选元素
+    filterAllBtn:e('filterAllBtn'),filterValidBtn:e('filterValidBtn'),filterInvalidBtn:e('filterInvalidBtn'),
+    selectAllCheckbox:e('selectAllCheckbox'),exportSelectedBtn:e('exportSelectedBtn'),
+    selectedCount:e('selectedCount'),totalCheckCount:e('totalCheckCount'),checkActions:e('checkActions'),
+    // 新增有效结果勾选元素
+    validSelectionControls:e('validSelectionControls'),
+    selectedValidCount:e('selectedValidCount'),totalValidCount:e('totalValidCount'),
+    selectAllValidBtn:e('selectAllValidBtn'),deselectAllValidBtn:e('deselectAllValidBtn'),
+    exportValidSelectedBtn:e('exportValidSelectedBtn')
+};
+
+const utils={
+    fixUrl:u=>u.replace(/\\\//g,'/'),
+    normalizeUrl:u=>{try{let f=utils.fixUrl(u);if(!f.startsWith('http://')&&!f.startsWith('https://'))f='http://'+f;
+    const o=new URL(f);let n=`${o.protocol}//${o.hostname}`;if(o.port&&o.port!=='80'&&o.port!=='443')n+=`:${o.port}`;
+    n+=o.pathname.replace(/\/+$/,'');if(o.search)n+=o.search;return n}catch{return utils.fixUrl(u)}},
+    showStatus:(m,isErr)=>{const s=els.networkStatus;if(!s)return;s.textContent=m;s.className=`status ${isErr?'error':'success'}`;s.style.display='block';
+    if(!isErr)setTimeout(()=>s.style.display='none',3000)},
+    showLoading:s=>{if(els.networkLoading)els.networkLoading.style.display=s?'block':'none'},
+    hideModal:m=>{const e=document.getElementById(m);if(e)e.style.display='none'},
+    updateStats:()=>{els.totalCount.textContent=state.data.length;els.groupCount.textContent=state.groups.size;
+    const u=new Set(),d=new Map();state.data.forEach(i=>{const n=utils.normalizeUrl(i.url);d.has(n)?d.set(n,d.get(n)+1):(d.set(n,1),u.add(n))});
+    let dc=0;d.forEach(c=>{if(c>1)dc+=c-1});state.duplicates=dc;els.uniqueCount.textContent=u.size;els.duplicateCount.textContent=dc},
+    calculatePagination:()=>{const t=state.data.length,ps=parseInt(state.pagination.pageSize)||10,tp=Math.max(1,Math.ceil(t/ps));
+    let cp=Math.min(Math.max(1,state.pagination.currentPage),tp);state.pagination={currentPage:cp,pageSize:ps,totalPages:tp};
+    return{currentPage:cp,pageSize:ps,totalPages:tp,startIndex:(cp-1)*ps,endIndex:Math.min(cp*ps,t)}},
+    updatePaginationControls:()=>{const p=utils.calculatePagination();els.currentPage.textContent=p.currentPage;
+    els.totalPages.textContent=p.totalPages;els.pageSizeInput.value=p.pageSize;els.paginationControls.style.display=state.data.length>0?'flex':'none';
+    els.firstPageBtn.disabled=p.currentPage<=1;els.prevPageBtn.disabled=p.currentPage<=1;els.nextPageBtn.disabled=p.currentPage>=p.totalPages;
+    els.lastPageBtn.disabled=p.currentPage>=p.totalPages;utils.generatePageNumbers(p)},
+    generatePageNumbers:p=>{els.pageNumbers.innerHTML='';const s=Math.max(1,p.currentPage-3),e=Math.min(p.totalPages,s+6);
+    for(let i=s;i<=e;i++){const b=document.createElement('button');b.className=`page-btn ${i===p.currentPage?'active':''}`;
+    b.textContent=i;b.setAttribute('data-page',i);b.title=`第${i}页`;els.pageNumbers.appendChild(b)}},
+    // 根据筛选条件获取数据
+    getFilteredData:()=>{
+        if(state.currentFilter==='all')return state.data;
+        if(state.currentFilter==='valid'){
+            return state.data.filter(item=>{
+                const status=state.checkStatus[item.url];
+                return status&&status.status==='checked'&&status.valid===true;
+            });
         }
-        updateAnimationFrameId = null;
-      });
-    }
-  };
-  
-  // 获取DOM元素（带缓存）
-  const getElement = (id) => {
-    if (!DOM_CACHE[id]) {
-      DOM_CACHE[id] = document.getElementById(id);
-    }
-    return DOM_CACHE[id];
-  };
-  
-  // 数据状态
-  const state = {
-    data: [],
-    selectedGroups: [],
-    allGroups: [],
-    isDetecting: false,
-    detectionStats: { 
-      processed: 0, 
-      valid: 0, 
-      invalid: 0, 
-      startTime: 0,
-      totalTime: 0
-    },
-    currentFilter: 'all',
-    importData: {
-      groupInfo: {},
-      sources: {},
-      sourceFormat: {} // 新增：记录每个源的格式类型
-    },
-    lastUpdateTime: 0,
-    updateThrottleTime: 50 // 最小更新间隔50ms
-  };
-  
-  // 工具函数
-  const utils = {
-    cleanUrl: (u) => {
-      return u.replace(/\\\//g, '/');
-    },
-    
-    showStatus: (msg, isError) => {
-      const el = getElement('networkStatus');
-      if (!el) return;
-      
-      el.textContent = msg;
-      el.className = `status ${isError ? 'error' : 'success'}`;
-      el.style.display = msg ? 'block' : 'none';
-    },
-    
-    fetchUrl: async (u) => {
-      const cleaned = utils.cleanUrl(u);
-      const proxies = [
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(cleaned)}`,
-        `https://corsproxy.io/?${encodeURIComponent(cleaned)}`,
-        cleaned
-      ];
-      
-      for (let p of proxies) {
-        try {
-          const c = new AbortController();
-          setTimeout(() => c.abort(), 10000);
-          const r = await fetch(p, { 
-            signal: c.signal, 
-            headers: { 'User-Agent': 'Mozilla/5.0' } 
-          });
-          if (r.ok) return await r.text();
-        } catch (e) {
-          // 忽略错误，尝试下一个代理
+        if(state.currentFilter==='invalid'){
+            return state.data.filter(item=>{
+                const status=state.checkStatus[item.url];
+                return !status||status.status!=='checked'||status.valid===false;
+            });
         }
-      }
-      throw new Error('所有代理均失败');
+        return state.data;
     },
-    
-    toggleControls: (enable) => {
-      // 控制所有主要按钮
-      const controls = [
-        'localImportBtn', 'networkImportBtn', 'groupBtn', 'clearBtn',
-        'selectAllGroupsBtn', 'deselectAllGroupsBtn', 'testSelectedGroupsBtn',
-        'closeGroupBtn', 'cancelImportBtn', 'confirmImportBtn',
-        'selectAllValidBtn', 'deselectAllValidBtn', 'exportValidBtn',
-        'closeVideoBtn'
-      ];
-      
-      controls.forEach(id => {
-        const btn = getElement(id);
-        if (btn) btn.disabled = !enable;
-      });
-      
-      // 控制过滤按钮
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.disabled = !enable;
-      });
-      
-      // 控制滑块
-      const sliders = ['timeoutSlider', 'delaySlider', 'concurrencySlider'];
-      sliders.forEach(id => {
-        const slider = getElement(id);
-        if (slider) slider.disabled = !enable;
-      });
-      
-      // 控制文件输入
-      const fileInput = getElement('fileInput');
-      if (fileInput) {
-        // 文件输入没有disabled属性，但我们可以通过样式和事件来禁用
-        if (!enable) {
-          fileInput.style.pointerEvents = 'none';
-          fileInput.style.opacity = '0.5';
-        } else {
-          fileInput.style.pointerEvents = 'auto';
-          fileInput.style.opacity = '1';
-        }
-      }
-      
-      // 检测按钮特殊处理（在检测中显示停止按钮，保持可用）
-      const testBtn = getElement('testBtn');
-      if (testBtn) {
-        // 检测按钮在检测过程中保持可用（用于停止检测）
-        if (detector.running) {
-          testBtn.disabled = false;
-          testBtn.textContent = '停止检测';
-          testBtn.classList.remove('green');
-          testBtn.classList.add('red');
-        } else {
-          testBtn.disabled = !enable;
-          testBtn.textContent = '开始检测';
-          testBtn.classList.remove('red');
-          testBtn.classList.add('green');
-        }
-      }
+    getCurrentPageData:()=>{
+        const p=utils.calculatePagination();
+        const d=state.data.slice(p.startIndex,p.endIndex);
+        return d;
     },
-    
-    formatTime: (ms) => {
-      if (ms < 1000) return `${ms}ms`;
-      if (ms < 10000) return `${(ms/1000).toFixed(2)}s`;
-      return `${(ms/1000).toFixed(1)}s`;
-    },
-    
-    updateSelectedCount: () => {
-      const selectedItems = state.data.filter(item => 
-        item.status === 'valid' && item.selected
-      );
-      const count = selectedItems.length;
-      const el = getElement('selectedCount');
-      
-      if (state.currentFilter === 'valid') {
-        el.textContent = `已选: ${count}`;
-        el.style.display = 'inline';
-        
-        ['selectAllValidBtn', 'deselectAllValidBtn'].forEach(id => {
-          const btn = getElement(id);
-          if (btn) btn.style.display = 'inline-block';
+    // 获取所有有效结果
+    getAllValidData:()=>{
+        return state.data.filter(item=>{
+            const status=state.checkStatus[item.url];
+            return status&&status.status==='checked'&&status.valid===true;
         });
-        
-        const exportBtn = getElement('exportValidBtn');
-        if (exportBtn) exportBtn.style.display = count > 0 ? 'inline-block' : 'none';
-      } else {
-        el.style.display = 'none';
-        ['selectAllValidBtn', 'deselectAllValidBtn', 'exportValidBtn'].forEach(id => {
-          const btn = getElement(id);
-          if (btn) btn.style.display = 'none';
-        });
-      }
     },
-    
-    playVideo: (url, channelName) => {
-      if (detector.running) {
-        alert('检测过程中无法播放视频');
-        return;
-      }
-      
-      const title = getElement('videoTitle');
-      const placeholder = getElement('videoPlaceholder');
-      const video = getElement('previewVideo');
-      
-      if (title) title.textContent = channelName || '视频预览';
-      if (placeholder) placeholder.style.display = 'none';
-      if (video) {
-        video.style.display = 'block';
-        video.src = utils.cleanUrl(url);
-        video.play().catch(e => console.log('自动播放失败:', e));
-      }
-      
-      // 使用平滑滚动
-      const preview = getElement('videoPreview');
-      if (preview) {
-        setTimeout(() => {
-          preview.scrollIntoView({ behavior: 'smooth' });
-        }, 300);
-      }
+    // 获取当前筛选条件下的数据
+    getCurrentFilterData:()=>{
+        const filteredData=utils.getFilteredData();
+        const p=utils.calculatePagination();
+        // 重新计算筛选后的分页
+        const totalFiltered=filteredData.length;
+        const pageSize=parseInt(state.pagination.pageSize)||10;
+        const totalPages=Math.max(1,Math.ceil(totalFiltered/pageSize));
+        let currentPage=Math.min(Math.max(1,state.pagination.currentPage),totalPages);
+        const startIndex=(currentPage-1)*pageSize;
+        const endIndex=Math.min(currentPage*pageSize,totalFiltered);
+        
+        // 更新分页状态
+        state.pagination.totalPages=totalPages;
+        if(currentPage>totalPages&&totalPages>0){
+            currentPage=totalPages;
+            state.pagination.currentPage=currentPage;
+        }
+        
+        return filteredData.slice(startIndex,endIndex);
     },
-    
-    stopVideo: () => {
-      const video = getElement('previewVideo');
-      const placeholder = getElement('videoPlaceholder');
-      const title = getElement('videoTitle');
-      
-      if (video) {
-        video.pause();
-        video.src = '';
-        video.style.display = 'none';
-      }
-      if (placeholder) placeholder.style.display = 'block';
-      if (title) title.textContent = '视频预览';
-    }
-  };
-  
-  // 核心功能
-  const core = {
-    // 缓存过滤数据
-    cachedFilteredData: null,
-    
-    getFilteredData: () => {
-      // 如果有缓存且数据未变化，直接返回缓存
-      if (core.cachedFilteredData) return core.cachedFilteredData;
-      
-      if (state.currentFilter === 'all') {
-        core.cachedFilteredData = state.data;
-      } else if (state.currentFilter === 'valid') {
-        core.cachedFilteredData = state.data.filter(i => i.status === 'valid');
-      } else if (state.currentFilter === 'invalid') {
-        core.cachedFilteredData = state.data.filter(i => i.status === 'invalid');
-      } else {
-        core.cachedFilteredData = state.data;
-      }
-      
-      return core.cachedFilteredData;
-    },
-    
-    // 优化：批量更新统计信息
-    updateStats: () => {
-      const now = Date.now();
-      if (now - state.lastUpdateTime < state.updateThrottleTime) {
-        return;
-      }
-      state.lastUpdateTime = now;
-      
-      const count = state.data.length;
-      const unique = new Set(state.data.map(i => i.url)).size;
-      const valid = state.data.filter(i => i.status === 'valid').length;
-      const invalid = state.data.filter(i => i.status === 'invalid').length;
-      
-      const groupsSet = new Set();
-      state.data.forEach(i => groupsSet.add(i.group));
-      state.allGroups = Array.from(groupsSet);
-      
-      // 批量更新DOM
-      scheduleUpdate(() => {
-        const elements = {
-          sourceCount: `${count}个直播源`,
-          uniqueCount: `${unique}个唯一源`,
-          totalCount: count,
-          groupCount: state.allGroups.length,
-          validCount: `${valid}个有效`,
-          invalidCount: `${invalid}个失效`
-        };
+    updateResultsList:()=>{
+        const filteredData=utils.getFilteredData();
         
-        Object.entries(elements).forEach(([id, value]) => {
-          const el = getElement(id);
-          if (el) el.textContent = value;
-        });
-      });
-    },
-    
-    update: () => {
-      // 清除缓存
-      core.cachedFilteredData = null;
-      
-      // 更新统计信息
-      core.updateStats();
-      
-      const filteredData = core.getFilteredData();
-      const sourceList = getElement('sourceList');
-      
-      if (!sourceList) return;
-      
-      // 空列表处理
-      if (filteredData.length === 0) {
-        let emptyMessage = '暂无直播源';
-        if (state.data.length > 0) {
-          if (state.currentFilter === 'valid') emptyMessage = '暂无有效直播源';
-          else if (state.currentFilter === 'invalid') emptyMessage = '暂无失效直播源';
-          else emptyMessage = '请使用上方导入功能';
-        }
-        
-        scheduleUpdate(() => {
-          sourceList.innerHTML = `<div class="empty-list">${emptyMessage}</div>`;
-        });
-        return;
-      }
-      
-      // 使用DocumentFragment批量插入
-      scheduleUpdate(() => {
-        const fragment = document.createDocumentFragment();
-        
-        filteredData.forEach((i, index) => {
-          const div = document.createElement('div');
-          div.className = 'source-item';
-          div.setAttribute('data-index', state.data.indexOf(i));
-          
-          const showCheckbox = state.currentFilter === 'valid' && i.status === 'valid';
-          
-          div.innerHTML = `
-            ${showCheckbox ? `
-              <div class="source-checkbox-label">
-                <input type="checkbox" class="source-checkbox" ${i.selected ? 'checked' : ''} ${detector.running ? 'disabled' : ''}>
-              </div>
-            ` : '<div style="width:22px"></div>'}
-            <div class="channel-name">${i.name || i.group}</div>
-            <div class="source-url">${i.url}</div>
-            <div class="status-container">
-              <div class="status-badge status-${i.status}">
-                ${i.status === 'valid' ? '有效' : i.status === 'invalid' ? '失效' : '未检'}
-              </div>
-              ${i.detectionTime ? `
-                <div class="detection-time ${i.status}">
-                  ${utils.formatTime(i.detectionTime)}
-                </div>` : ''}
-            </div>
-            <button class="play-btn" data-url="${i.url}" data-name="${i.name || i.group}" ${detector.running ? 'disabled' : ''}>播放</button>
-          `;
-          fragment.appendChild(div);
-        });
-        
-        sourceList.innerHTML = '';
-        sourceList.appendChild(fragment);
-      });
-      
-      // 更新分组复选框
-      core.updateGroupCheckboxes();
-      utils.updateSelectedCount();
-    },
-    
-    updateGroupCheckboxes: () => {
-      const groupCheckboxes = getElement('groupCheckboxes');
-      if (!groupCheckboxes) return;
-      
-      scheduleUpdate(() => {
-        const fragment = document.createDocumentFragment();
-        const groupCountMap = new Map();
-        
-        state.data.forEach(i => {
-          groupCountMap.set(i.group, (groupCountMap.get(i.group) || 0) + 1);
-        });
-        
-        state.allGroups.forEach(g => {
-          const count = groupCountMap.get(g) || 0;
-          const selected = state.selectedGroups.includes(g);
-          const div = document.createElement('div');
-          div.className = `group-item ${selected ? 'selected' : ''}`;
-          div.setAttribute('data-group', g);
-          div.innerHTML = `
-            <input type="checkbox" class="group-checkbox" ${selected ? 'checked' : ''} ${detector.running ? 'disabled' : ''}>
-            <div class="group-name">${g}</div>
-            <div class="group-count">${count}个源</div>
-          `;
-          fragment.appendChild(div);
-        });
-        
-        groupCheckboxes.innerHTML = '';
-        groupCheckboxes.appendChild(fragment);
-      });
-    },
-    
-    toggleGroup: (g) => {
-      if (detector.running) return;
-      const idx = state.selectedGroups.indexOf(g);
-      idx > -1 ? state.selectedGroups.splice(idx, 1) : state.selectedGroups.push(g);
-      core.updateGroupCheckboxes();
-    },
-    
-    // 解析EXTINF格式
-    parseExtinfLine: (line) => {
-      // 示例: #EXTINF:-1 tvg-name="Clarity 4K" tvg-logo="https://i.imgur.com/M87kbVk.png" group-title="4K超清",Clarity 4K
-      const result = {
-        duration: -1,
-        tvgName: '',
-        tvgLogo: '',
-        groupTitle: '',
-        channelName: '',
-        attributes: {}
-      };
-      
-      // 提取属性和频道名称
-      const match = line.match(/^#EXTINF:([-0-9.]+)(?:\s+(.*))?,(.*)$/);
-      if (!match) return null;
-      
-      result.duration = parseFloat(match[1]);
-      result.channelName = match[3].trim();
-      
-      // 解析属性
-      const attrString = match[2];
-      if (attrString) {
-        // 匹配属性，如 tvg-name="Clarity 4K"
-        const attrRegex = /(\S+)=["']([^"']*)["']/g;
-        let attrMatch;
-        while ((attrMatch = attrRegex.exec(attrString)) !== null) {
-          const key = attrMatch[1];
-          const value = attrMatch[2];
-          result.attributes[key] = value;
-          
-          if (key === 'tvg-name') result.tvgName = value;
-          if (key === 'tvg-logo') result.tvgLogo = value;
-          if (key === 'group-title') result.groupTitle = value;
-        }
-      }
-      
-      return result;
-    },
-    
-    extractUrls: (t) => {
-      const result = [];
-      let currentGroup = '默认分组';
-      const lines = t.split('\n');
-      const urlSet = new Set();
-      
-      state.importData = {
-        groupInfo: {},
-        sources: {},
-        sourceFormat: {}
-      };
-      
-      // 判断是否为M3U格式（包含#EXTINF行）
-      const isM3UFormat = lines.some(line => line.trim().startsWith('#EXTINF'));
-      
-      if (isM3UFormat) {
-        // M3U格式解析
-        let extinfLine = '';
-        
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          
-          if (line.startsWith('#EXTINF')) {
-            extinfLine = line;
-          } else if (line.startsWith('#') && !line.startsWith('#EXTINF')) {
-            // 其他M3U注释行，跳过
-            continue;
-          } else if (extinfLine && (line.startsWith('http://') || line.startsWith('https://'))) {
-            // 找到URL行
-            const url = line.trim();
-            
-            if (!urlSet.has(url)) {
-              urlSet.add(url);
-              
-              // 解析EXTINF行
-              const extinfData = core.parseExtinfLine(extinfLine);
-              if (extinfData) {
-                const channelName = extinfData.channelName || extinfData.tvgName || '未命名';
-                const group = extinfData.groupTitle || '默认分组';
-                
-                const item = { 
-                  name: channelName,
-                  url: url, 
-                  group: group, 
-                  status: 'unknown',
-                  detectionTime: 0,
-                  selected: false
-                };
-                result.push(item);
-                
-                state.importData.sources[url] = {
-                  originalLine: extinfLine + '\n' + line,
-                  group: group,
-                  name: channelName,
-                  format: 'm3u',
-                  extinfData: extinfData
-                };
-                
-                // 记录分组信息
-                if (group !== '默认分组' && !state.importData.groupInfo[group]) {
-                  state.importData.groupInfo[group] = `${group},#genre#${group}`;
-                }
-              }
-            }
-            
-            // 重置EXTINF行
-            extinfLine = '';
-          } else if (line.includes(',#genre#')) {
-            // M3U中的分组行
-            const match = line.match(/^(.*),#genre#(.*)$/);
-            if (match) {
-              currentGroup = (match[2] || match[1]).trim();
-              state.importData.groupInfo[currentGroup] = line;
-            }
-          }
-        }
-      } else {
-        // 原始格式解析
-        // 第一遍：收集分组信息
-        for (let line of lines) {
-          const originalLine = line;
-          line = line.trim();
-          if (!line) continue;
-          
-          if (line.includes(',#genre#')) {
-            const match = line.match(/^(.*),#genre#(.*)$/);
-            if (match) {
-              currentGroup = (match[2] || match[1]).trim();
-              state.importData.groupInfo[currentGroup] = originalLine;
-            }
-          }
-        }
-        
-        currentGroup = '默认分组';
-        
-        // 第二遍：提取URL
-        for (let line of lines) {
-          const originalLine = line;
-          line = line.trim();
-          if (!line) continue;
-          
-          if (line.includes(',#genre#')) {
-            const match = line.match(/^(.*),#genre#(.*)$/);
-            if (match) {
-              currentGroup = (match[2] || match[1]).trim();
-            }
-            continue;
-          }
-          
-          if (line.startsWith('#') || line.startsWith('//')) continue;
-          
-          const commaIndex = line.indexOf(',');
-          let channelName = currentGroup;
-          let urlPart = line;
-          
-          if (commaIndex !== -1) {
-            channelName = line.substring(0, commaIndex).trim();
-            urlPart = line.substring(commaIndex + 1).trim();
-          }
-          
-          const matches = urlPart.match(/(https?:\/\/[^\s<>"']+)/gi);
-          if (matches) {
-            for (let u of matches) {
-              u = u.replace(/[\s,;'"`]+$/, '');
-              if (u.length > 10 && !urlSet.has(u)) {
-                urlSet.add(u);
-                const item = { 
-                  name: channelName,
-                  url: u, 
-                  group: currentGroup, 
-                  status: 'unknown',
-                  detectionTime: 0,
-                  selected: false
-                };
-                result.push(item);
-                
-                state.importData.sources[u] = {
-                  originalLine: originalLine,
-                  group: currentGroup,
-                  name: channelName,
-                  format: 'standard'
-                };
-              }
-            }
-          }
-        }
-      }
-      
-      return result;
-    },
-    
-    addSources: (items) => {
-      const oldCount = state.data.length;
-      const urlSet = new Set(state.data.map(d => d.url));
-      const newGroups = new Set();
-      
-      for (let item of items) {
-        if (!urlSet.has(item.url)) {
-          urlSet.add(item.url);
-          state.data.push(item);
-          newGroups.add(item.group);
-        }
-      }
-      
-      // 清除缓存
-      core.cachedFilteredData = null;
-      
-      return { added: state.data.length - oldCount, newGroups: newGroups.size };
-    },
-    
-    updateFilterButtons: () => {
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.getAttribute('data-filter') === state.currentFilter) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-    },
-    
-    selectAllValid: () => {
-      state.data.forEach(item => {
-        if (item.status === 'valid') {
-          item.selected = true;
-        }
-      });
-      core.update();
-    },
-    
-    deselectAllValid: () => {
-      state.data.forEach(item => {
-        if (item.status === 'valid') {
-          item.selected = false;
-        }
-      });
-      core.update();
-    },
-    
-    generateExportContent: (selectedItems) => {
-      const lines = [];
-      const groupsMap = new Map();
-      
-      // 按分组组织数据
-      selectedItems.forEach(item => {
-        const url = item.url;
-        const group = item.group;
-        
-        if (!groupsMap.has(group)) {
-          groupsMap.set(group, []);
-        }
-        
-        groupsMap.get(group).push(item);
-      });
-      
-      // 判断是否包含M3U格式
-      const hasM3UFormat = selectedItems.some(item => {
-        const sourceInfo = state.importData.sources[item.url];
-        return sourceInfo && sourceInfo.format === 'm3u';
-      });
-      
-      // 如果包含M3U格式，按M3U格式导出
-      if (hasM3UFormat) {
-        // 添加M3U头
-        lines.push('#EXTM3U');
-        
-        // 按分组导出M3U格式
-        const allGroups = Array.from(groupsMap.keys());
-        
-        allGroups.forEach(group => {
-          // 如果有分组信息，添加注释分组行（可选）
-          if (group !== '默认分组') {
-            lines.push(`# 分组: ${group}`);
-          }
-          
-          const channels = groupsMap.get(group);
-          channels.forEach(item => {
-            const sourceInfo = state.importData.sources[item.url];
-            if (sourceInfo) {
-              if (sourceInfo.format === 'm3u') {
-                // 直接使用原始M3U行
-                lines.push(sourceInfo.originalLine);
-              } else {
-                // 标准格式转换为M3U格式
-                const tvgName = item.name.replace(/"/g, '');
-                const groupTitle = item.group.replace(/"/g, '');
-                lines.push(`#EXTINF:-1 tvg-name="${tvgName}" group-title="${groupTitle}",${item.name}`);
-                lines.push(item.url);
-              }
-            } else {
-              // 如果没有原始信息，生成基本的M3U格式
-              const tvgName = item.name.replace(/"/g, '');
-              const groupTitle = item.group.replace(/"/g, '');
-              lines.push(`#EXTINF:-1 tvg-name="${tvgName}" group-title="${groupTitle}",${item.name}`);
-              lines.push(item.url);
-            }
-          });
-        });
-      } else {
-        // 标准格式导出
-        const allGroups = Array.from(groupsMap.keys());
-        
-        allGroups.forEach(group => {
-          if (state.importData.groupInfo[group]) {
-            lines.push(state.importData.groupInfo[group]);
-          } else if (group !== '默认分组') {
-            lines.push(`${group},#genre#${group}`);
-          }
-          
-          const channels = groupsMap.get(group);
-          channels.forEach(item => {
-            const sourceInfo = state.importData.sources[item.url];
-            if (sourceInfo) {
-              lines.push(sourceInfo.originalLine);
-            } else {
-              lines.push(`${item.name || item.group},${item.url}`);
-            }
-          });
-        });
-      }
-      
-      return lines.join('\n');
-    }
-  };
-  
-  // 检测器
-  const detector = {
-    queue: [],
-    workers: [],
-    timeout: 5000,
-    delay: 200,
-    concurrency: 10,
-    running: false,
-    
-    init: () => {
-      const timeoutSlider = getElement('timeoutSlider');
-      const delaySlider = getElement('delaySlider');
-      const concurrencySlider = getElement('concurrencySlider');
-      const timeoutValue = getElement('timeoutValue');
-      const delayValue = getElement('delayValue');
-      const concurrencyValue = getElement('concurrencyValue');
-      
-      if (timeoutSlider) {
-        timeoutSlider.oninput = () => {
-          detector.timeout = parseInt(timeoutSlider.value) * 1000;
-          if (timeoutValue) timeoutValue.textContent = timeoutSlider.value + '秒';
-        };
-      }
-      
-      if (delaySlider) {
-        delaySlider.oninput = () => {
-          detector.delay = parseInt(delaySlider.value);
-          if (delayValue) delayValue.textContent = delaySlider.value + 'ms';
-        };
-      }
-      
-      if (concurrencySlider) {
-        concurrencySlider.oninput = () => {
-          detector.concurrency = parseInt(concurrencySlider.value);
-          if (concurrencyValue) concurrencyValue.textContent = concurrencySlider.value + '个';
-        };
-      }
-      
-      detector.timeout = parseInt(timeoutSlider?.value || 5) * 1000;
-      detector.delay = parseInt(delaySlider?.value || 200);
-      detector.concurrency = parseInt(concurrencySlider?.value || 10);
-    },
-    
-    // 检测方法
-    testSource: (source, index) => {
-      return new Promise((resolve) => {
-        const timeout = detector.timeout;
-        const video = document.createElement('video');
-        video.muted = true;
-        video.preload = 'auto';
-        video.style.display = 'none';
-        
-        let timer = setTimeout(() => {
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'invalid', 
-            detectionTime: timeout,
-            reason: '超时'
-          });
-        }, timeout);
-        
-        const startTime = Date.now();
-        
-        function cleanup() {
-          clearTimeout(timer);
-          video.src = '';
-          video.load();
-          if (video.parentNode) {
-            video.parentNode.removeChild(video);
-          }
-        }
-        
-        video.onloadeddata = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '成功加载视频数据'
-          });
-        };
-        
-        video.oncanplay = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '视频可以播放'
-          });
-        };
-        
-        video.oncanplaythrough = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '视频可以流畅播放'
-          });
-        };
-        
-        video.onerror = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'invalid', 
-            detectionTime,
-            reason: '视频加载错误'
-          });
-        };
-        
-        video.src = utils.cleanUrl(source.url);
-        document.body.appendChild(video);
-        video.load();
-        
-        video.play().catch(() => {
-          // 自动播放被阻止是正常的，不影响检测
-        });
-      });
-    },
-    
-    updateProgress: () => {
-      const total = detector.queue.length;
-      const processed = state.detectionStats.processed;
-      const progress = total > 0 ? (processed / total) * 100 : 0;
-      
-      scheduleUpdate(() => {
-        const progressFill = getElement('progressFill');
-        if (progressFill) progressFill.style.width = `${progress}%`;
-        
-        const elements = {
-          processedCount: processed,
-          validDetectedCount: state.detectionStats.valid,
-          invalidDetectedCount: state.detectionStats.invalid
-        };
-        
-        Object.entries(elements).forEach(([id, value]) => {
-          const el = getElement(id);
-          if (el) el.textContent = value;
-        });
-        
-        if (state.detectionStats.startTime > 0) {
-          const elapsed = (Date.now() - state.detectionStats.startTime) / 1000;
-          const speed = elapsed > 0 ? Math.round(processed / elapsed) : 0;
-          const speedEl = getElement('speedValue');
-          if (speedEl) speedEl.textContent = speed;
-          
-          if (state.detectionStats.totalTime > 0 && processed > 0) {
-            const avgTime = Math.round(state.detectionStats.totalTime / processed);
-            const avgTimeEl = getElement('avgTimeValue');
-            if (avgTimeEl) avgTimeEl.textContent = utils.formatTime(avgTime);
-          }
-        }
-      });
-      
-      core.update();
-    },
-    
-    processResult: (result) => {
-      const { index, status, detectionTime } = result;
-      const source = state.data[index];
-      
-      if (source) {
-        source.status = status;
-        source.detectionTime = detectionTime;
-        
-        state.detectionStats.processed++;
-        state.detectionStats.totalTime += detectionTime;
-        
-        if (status === 'valid') {
-          state.detectionStats.valid++;
-        } else {
-          state.detectionStats.invalid++;
-        }
-        
-        detector.updateProgress();
-      }
-    },
-    
-    worker: async () => {
-      while (detector.running && detector.queue.length > 0) {
-        const task = detector.queue.shift();
-        if (!task) break;
-        
-        const result = await detector.testSource(task.source, task.index);
-        detector.processResult(result);
-        
-        if (detector.delay > 0 && detector.queue.length > 0) {
-          await new Promise(resolve => setTimeout(resolve, detector.delay));
-        }
-      }
-    },
-    
-    start: async () => {
-      if (detector.running || state.data.length === 0) return;
-      
-      detector.running = true;
-      state.detectionStats = {
-        processed: 0,
-        valid: 0,
-        invalid: 0,
-        startTime: Date.now(),
-        totalTime: 0
-      };
-      
-      scheduleUpdate(() => {
-        const avgTimeEl = getElement('avgTimeValue');
-        if (avgTimeEl) avgTimeEl.textContent = '0ms';
-      });
-      
-      // 禁用所有其他按钮，只保留检测按钮（停止按钮）可用
-      utils.toggleControls(false);
-      
-      const testBtn = getElement('testBtn');
-      if (testBtn) {
-        testBtn.textContent = '停止检测';
-        testBtn.classList.remove('green');
-        testBtn.classList.add('red');
-      }
-      
-      // 关闭所有模态框
-      const modals = ['networkModal', 'groupModal'];
-      modals.forEach(modalId => {
-        const modal = getElement(modalId);
-        if (modal && modal.style.display === 'block') {
-          modal.style.display = 'none';
-        }
-      });
-      
-      detector.queue = state.data.map((source, index) => ({ source, index }));
-      
-      detector.workers = [];
-      const workerCount = Math.min(detector.concurrency, detector.queue.length);
-      
-      for (let i = 0; i < workerCount; i++) {
-        detector.workers.push(detector.worker());
-      }
-      
-      try {
-        await Promise.all(detector.workers);
-      } catch (error) {
-        console.error('检测过程中出错:', error);
-      }
-      
-      detector.stop();
-    },
-    
-    stop: () => {
-      detector.running = false;
-      detector.queue = [];
-      detector.workers = [];
-      
-      // 重新启用所有按钮
-      utils.toggleControls(true);
-      
-      const testBtn = getElement('testBtn');
-      if (testBtn) {
-        testBtn.textContent = '开始检测';
-        testBtn.classList.remove('red');
-        testBtn.classList.add('green');
-      }
-      
-      core.selectAllValid();
-      
-      if (state.detectionStats.processed > 0) {
-        const avgTime = state.detectionStats.totalTime > 0 ? 
-          Math.round(state.detectionStats.totalTime / state.detectionStats.processed) : 0;
-        
-        scheduleUpdate(() => {
-          alert(`检测完成！\n已处理: ${state.detectionStats.processed}个\n有效: ${state.detectionStats.valid}个\n失效: ${state.detectionStats.invalid}个\n平均耗时: ${utils.formatTime(avgTime)}`);
-        });
-      }
-    }
-  };
-  
-  // 事件处理
-  const events = {
-    init: () => {
-      detector.init();
-      
-      // 事件委托优化：统一处理点击事件
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        
-        // 播放按钮
-        if (target.classList.contains('play-btn')) {
-          if (target.disabled) return;
-          const url = target.getAttribute('data-url');
-          const name = target.getAttribute('data-name');
-          if (url) utils.playVideo(url, name);
-          return;
-        }
-        
-        // 复选框
-        if (target.classList.contains('source-checkbox')) {
-          if (detector.running || target.disabled) return;
-          const sourceItem = target.closest('.source-item');
-          if (sourceItem) {
-            const index = parseInt(sourceItem.getAttribute('data-index'));
-            if (!isNaN(index) && index >= 0 && index < state.data.length) {
-              const item = state.data[index];
-              if (item.status === 'valid') {
-                item.selected = target.checked;
-                utils.updateSelectedCount();
-              }
-            }
-          }
-          return;
-        }
-        
-        // 分组复选框
-        if (target.classList.contains('group-checkbox') || target.closest('.group-item')) {
-          if (detector.running) return;
-          const groupItem = target.closest('.group-item');
-          if (groupItem) {
-            const group = groupItem.getAttribute('data-group');
-            if (group) core.toggleGroup(group);
-          }
-          return;
-        }
-        
-        // 过滤按钮
-        if (target.classList.contains('filter-btn')) {
-          if (detector.running || target.disabled) return;
-          const filter = target.getAttribute('data-filter');
-          if (filter) {
-            state.currentFilter = filter;
-            core.updateFilterButtons();
-            core.update();
-          }
-          return;
-        }
-      });
-      
-      // 按钮事件绑定
-      const bindButton = (id, handler) => {
-        const btn = getElement(id);
-        if (btn) btn.onclick = handler;
-      };
-      
-      bindButton('testBtn', () => {
-        if (state.data.length === 0) {
-          alert('请先导入直播源');
-          return;
-        }
-        detector.running ? detector.stop() : detector.start();
-      });
-      
-      bindButton('clearBtn', () => {
-        if (detector.running) {
-          alert('检测过程中不能清空列表');
-          return;
-        }
-        if (state.data.length && confirm('清空所有直播源？')) {
-          state.data = [];
-          state.selectedGroups = [];
-          state.importData = { groupInfo: {}, sources: {}, sourceFormat: {} };
-          detector.stop();
-          utils.stopVideo();
-          core.update();
-        }
-      });
-      
-      bindButton('localImportBtn', () => {
-        if (detector.running) {
-          alert('检测过程中不能导入');
-          return;
-        }
-        getElement('fileInput').click();
-      });
-      
-      bindButton('networkImportBtn', () => {
-        if (detector.running) {
-          alert('检测过程中不能导入');
-          return;
-        }
-        const networkUrl = getElement('networkUrl');
-        const networkStatus = getElement('networkStatus');
-        const modal = getElement('networkModal');
-        
-        if (networkUrl) networkUrl.value = '';
-        if (networkStatus) networkStatus.style.display = 'none';
-        if (modal) {
-          modal.style.display = 'block';
-          if (networkUrl) networkUrl.focus();
-        }
-      });
-      
-      bindButton('groupBtn', () => {
-        if (detector.running) {
-          alert('检测过程中不能管理分组');
-          return;
-        }
-        state.selectedGroups = [...state.allGroups];
-        const modal = getElement('groupModal');
-        if (modal) modal.style.display = 'block';
-        core.updateGroupCheckboxes();
-      });
-      
-      bindButton('closeGroupBtn', () => {
-        const modal = getElement('groupModal');
-        if (modal) modal.style.display = 'none';
-      });
-      
-      bindButton('cancelImportBtn', () => {
-        const modal = getElement('networkModal');
-        const confirmBtn = getElement('confirmImportBtn');
-        if (modal) modal.style.display = 'none';
-        if (confirmBtn) confirmBtn.disabled = false;
-      });
-      
-      // 文件输入
-      const fileInput = getElement('fileInput');
-      if (fileInput) {
-        fileInput.onchange = (e) => {
-          if (detector.running) {
-            alert('检测过程中不能导入');
-            fileInput.value = '';
+        if(!filteredData.length){
+            els.resultsList.innerHTML='<div class="empty-list">暂无数据，请导入直播源</div>';
+            els.paginationControls.style.display='none';
+            els.checkActions.style.display='none';
+            els.validSelectionControls.style.display='none';
             return;
-          }
-          
-          const file = e.target.files[0];
-          if (!file) return;
-          
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const items = core.extractUrls(e.target.result);
-            const result = core.addSources(items);
-            if (result.added > 0) {
-              alert(`导入${result.added}个直播源，新增${result.newGroups}个分组`);
-              core.update();
+        }
+        
+        const d=utils.getCurrentFilterData();
+        const p=utils.calculatePagination();
+        const filteredTotal=filteredData.length;
+        
+        let h='';d.forEach((i,idx)=>{
+            const f=utils.fixUrl(i.url),n=utils.normalizeUrl(i.url);
+            let dup=false;
+            const a=state.data.map(d=>utils.normalizeUrl(d.url)),ii=state.data.indexOf(i),fi=a.indexOf(n);
+            if(fi!==-1&&fi<ii)dup=true;
+            const ai=((p.currentPage-1)*p.pageSize)+idx+1;
+            // 获取检测状态
+            const status=state.checkStatus[i.url]||{status:'unchecked',valid:false};
+            let statusClass='',statusText='';
+            switch(status.status){
+                case 'checking':statusClass='status-checking';statusText='检测中';break;
+                case 'checked':statusClass=status.valid?'status-valid':'status-invalid';statusText=status.valid?'有效':'无效';break;
+                default:statusClass='';statusText='未检测';
             }
-          };
-          reader.readAsText(file);
-          fileInput.value = '';
-        };
-      }
-      
-      bindButton('confirmImportBtn', async () => {
-        if (detector.running) {
-          alert('检测过程中不能导入');
-          return;
+            // 添加播放按钮（只有检测有效时才显示）
+            const playButton = status.status === 'checked' && status.valid ? 
+                `<button class="play-btn" data-url="${i.url}" data-name="${i.name}" title="播放验证">▶</button>` : '';
+            
+            // 只有在有效结果筛选模式下才显示勾选框
+            const showCheckbox = state.currentFilter === 'valid';
+            const isChecked = state.selectedValidUrls.has(i.url);
+            
+            h+=`<div class="result-item" style="${dup?'opacity:0.7;background-color:#f8f9fa':''}">
+                ${showCheckbox?`<div class="channel-checkbox"><input type="checkbox" class="result-checkbox" data-url="${i.url}" ${isChecked?'checked':''}></div>`:''}
+                <div class="channel-info">
+                    <div class="channel-name">${ai}. ${i.name}${dup?'<span style="color:#dc3545;font-size:12px;margin-left:8px">[重复]</span>':''}
+                        ${statusText?`<span class="channel-status ${statusClass}">${statusText}</span>`:''}
+                        ${playButton}
+                    </div>
+                    <div class="channel-url">${f}</div>
+                    <div class="channel-group">${i.group}</div>
+                </div>
+            </div>`;
+        });
+        els.resultsList.innerHTML=h;
+        
+        // 更新分页信息
+        const totalFiltered=filteredData.length;
+        const totalPages=Math.max(1,Math.ceil(totalFiltered/p.pageSize));
+        els.currentPage.textContent=p.currentPage;
+        els.totalPages.textContent=totalPages;
+        els.pageSizeInput.value=p.pageSize;
+        els.paginationControls.style.display=totalFiltered>0?'flex':'none';
+        els.checkActions.style.display=totalFiltered>0?'flex':'none';
+        
+        // 只在有效结果模式下显示勾选控制区域
+        if(state.currentFilter === 'valid'){
+            els.validSelectionControls.style.display='flex';
+            // 更新有效结果统计
+            const validData = utils.getAllValidData();
+            els.selectedValidCount.textContent = state.selectedValidUrls.size;
+            els.totalValidCount.textContent = validData.length;
+        } else {
+            els.validSelectionControls.style.display='none';
         }
         
-        const networkUrl = getElement('networkUrl');
-        if (!networkUrl) return;
+        utils.updatePaginationControls();
+        setTimeout(()=>els.resultsList.scrollTop=0,100);
+    },
+    updateGroupList:()=>{els.groupCheckboxes.innerHTML='';if(!state.groups.size){els.groupCheckboxes.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#999;padding:20px">暂无分组</div>';return}
+    const g={};state.data.forEach(i=>g[i.group]=(g[i.group]||0)+1);state.groups.forEach(gp=>{const c=g[gp]||0,s=state.selectedGroups.includes(gp);
+    const d=document.createElement('div');d.className=`group-item ${s?'selected':''}`;d.setAttribute('data-group',gp);
+    d.innerHTML=`<div class="group-name">${gp}</div><div class="group-count">${c}个源</div><input type="checkbox" class="group-checkbox" ${s?'checked':''} style="display:none">`;els.groupCheckboxes.appendChild(d)})},
+    parseSourceText:t=>{const r=[];let cg='默认分组';const l=t.split('\n');state.importData={groupInfo:{},sources:{}};
+    l.forEach(line=>{const ol=line;line=line.trim();if(!line)return;if(line.includes(',#genre#')){const m=line.match(/^(.*),#genre#(.*)$/);
+    if(m){cg=(m[2]||m[1]).trim();state.importData.groupInfo[cg]=utils.fixUrl(ol)}}});cg='默认分组';
+    l.forEach(line=>{const ol=line;line=line.trim();if(!line)return;if(line.includes(',#genre#')){const m=line.match(/^(.*),#genre#(.*)$/);
+    if(m){cg=(m[2]||m[1]).trim()}return}if(line.startsWith('#')||line.startsWith('//'))return;
+    let ci=line.indexOf(',');let cn=cg;let up=line;if(ci!==-1){cn=line.substring(0,ci).trim();up=line.substring(ci+1).trim()}
+    const fu=utils.fixUrl(up);const m=fu.match(/(https?:\/\/[^\s<>"']+)/gi);if(m){m.forEach(u=>{u=u.replace(/[\s,;'"`]+$/,'');u=utils.fixUrl(u);
+    if(u.length>10){r.push({name:cn,url:u,group:cg});state.importData.sources[u]={originalLine:utils.fixUrl(ol),group:cg,name:cn}}})}});return r},
+    addSources:s=>{const oc=state.data.length,ogs=state.groups.size,eu=new Set();state.data.forEach(i=>eu.add(utils.normalizeUrl(i.url)));
+    const nd=new Set(),au=new Set();let ac=0,dc=0;s.forEach(src=>{const n=utils.normalizeUrl(src.url);
+    if(eu.has(n)||au.has(n)){dc++;nd.add(src.url);return}au.add(n);eu.add(n);state.data.push(src);state.groups.add(src.group);ac++});
+    state.duplicates+=dc;state.pagination.currentPage=1;return{added:ac,newGroups:state.groups.size-ogs,duplicates:dc}},
+    removeDuplicates:()=>{if(!state.data.length)return;const u=new Map(),nd=[];state.data.forEach(i=>{const n=utils.normalizeUrl(i.url);
+    if(!u.has(n)){u.set(n,i);nd.push(i)}});const rc=state.data.length-nd;if(rc){state.data=nd;state.groups.clear();state.data.forEach(i=>state.groups.add(i.group));
+    state.duplicates=0;state.pagination.currentPage=1;alert(`已删除${rc}个重复项`);return true}return false},
+    // 新增：检测单个直播源（并发版本）
+    async checkSource(url,timeout){
+        const startTime=Date.now();
+        const controller=new AbortController();
+        const timeoutId=setTimeout(()=>controller.abort(),timeout*1000);
         
-        const url = networkUrl.value.trim();
-        const cleaned = utils.cleanUrl(url);
-        
-        if (!url) {
-          utils.showStatus('请输入URL', true);
-          return;
-        }
-        
-        if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
-          utils.showStatus('URL格式错误', true);
-          return;
-        }
-        
-        utils.showStatus('', false);
-        const confirmBtn = getElement('confirmImportBtn');
-        if (confirmBtn) confirmBtn.disabled = true;
-        
-        try {
-          const text = await utils.fetchUrl(url);
-          if (!text) throw new Error('内容为空');
-          
-          const items = core.extractUrls(text);
-          if (items.length === 0) throw new Error('未找到有效URL');
-          
-          const result = core.addSources(items);
-          utils.showStatus(`导入${result.added}个直播源，新增${result.newGroups}个分组`, false);
-          core.update();
-          
-          setTimeout(() => {
-            const modal = getElement('networkModal');
-            if (modal && modal.style.display === 'block') modal.style.display = 'none';
-          }, 2000);
-        } catch (e) {
-          let msg = '导入失败: ';
-          if (e.message.includes('失败')) msg += '无法访问URL';
-          else if (e.message.includes('fetch')) msg += '网络错误';
-          else msg += e.message;
-          utils.showStatus(msg, true);
-        }
-        
-        if (confirmBtn) confirmBtn.disabled = false;
-      });
-      
-      bindButton('selectAllGroupsBtn', () => {
-        if (detector.running) return;
-        state.selectedGroups = [...state.allGroups];
-        core.updateGroupCheckboxes();
-      });
-      
-      bindButton('deselectAllGroupsBtn', () => {
-        if (detector.running) return;
-        state.selectedGroups = [];
-        core.updateGroupCheckboxes();
-      });
-      
-      bindButton('testSelectedGroupsBtn', async () => {
-        if (detector.running) {
-          alert('检测过程中不能开始新检测');
-          return;
-        }
-        
-        if (state.selectedGroups.length === 0) {
-          alert('请至少选择一个分组');
-          return;
-        }
-        
-        const sources = state.data.filter(i => state.selectedGroups.includes(i.group));
-        if (sources.length === 0) {
-          alert('选中的分组没有直播源');
-          return;
-        }
-        
-        const originalData = [...state.data];
-        const originalSelected = [...state.selectedGroups];
-        state.data = sources;
-        state.selectedGroups = [...new Set(sources.map(s => s.group))];
-        await detector.start();
-        state.data = originalData;
-        state.selectedGroups = originalSelected;
-        core.update();
-        
-        const modal = getElement('groupModal');
-        if (modal) modal.style.display = 'none';
-      });
-      
-      bindButton('selectAllValidBtn', () => {
-        if (detector.running) return;
-        core.selectAllValid();
-      });
-      
-      bindButton('deselectAllValidBtn', () => {
-        if (detector.running) return;
-        core.deselectAllValid();
-      });
-      
-      // 模态框点击外部关闭
-      const modals = ['networkModal', 'groupModal'];
-      modals.forEach(modalId => {
-        const modal = getElement(modalId);
-        if (modal) {
-          modal.onclick = (e) => {
-            if (e.target === modal) {
-              modal.style.display = 'none';
-              const confirmBtn = getElement('confirmImportBtn');
-              if (confirmBtn) confirmBtn.disabled = false;
+        try{
+            // 第一步：使用fetch检测连接
+            const response=await fetch(url,{
+                method:'HEAD',
+                signal:controller.signal,
+                headers:{'User-Agent':'Mozilla/5.0'},
+                mode:'no-cors'
+            });
+            clearTimeout(timeoutId);
+            
+            // 如果能通过fetch检测，再进行二次验证
+            if(response.ok||response.type==='opaque'){
+                // 第二步：使用video元素进行canplaythrough验证
+                return new Promise((resolve)=>{
+                    const video=document.createElement('video');
+                    video.preload='metadata';
+                    video.muted=true;
+                    video.playsInline=true;
+                    
+                    const playTimeout=setTimeout(()=>{
+                        video.remove();
+                        resolve({valid:false,reason:'视频加载超时',time:Date.now()-startTime});
+                    },(timeout-1)*1000);
+                    
+                    video.oncanplaythrough=()=>{
+                        clearTimeout(playTimeout);
+                        video.remove();
+                        resolve({valid:true,reason:'视频可播放',time:Date.now()-startTime});
+                    };
+                    
+                    video.onerror=()=>{
+                        clearTimeout(playTimeout);
+                        video.remove();
+                        resolve({valid:false,reason:'视频加载失败',time:Date.now()-startTime});
+                    };
+                    
+                    video.src=url;
+                });
+            }else{
+                return {valid:false,reason:`HTTP状态:${response.status}`,time:Date.now()-startTime};
             }
-          };
+        }catch(error){
+            clearTimeout(timeoutId);
+            return {valid:false,reason:error.name==='AbortError'?'请求超时':`错误:${error.message}`,time:Date.now()-startTime};
         }
-      });
-      
-      // ESC键关闭模态框
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          modals.forEach(modalId => {
-            const modal = getElement(modalId);
-            if (modal && modal.style.display === 'block') {
-              modal.style.display = 'none';
-              const confirmBtn = getElement('confirmImportBtn');
-              if (confirmBtn) confirmBtn.disabled = false;
-            }
-          });
-        }
-      });
-      
-      bindButton('exportValidBtn', () => {
-        if (detector.running) return;
+    },
+    // 新增：并发控制函数
+    async concurrentCheck(sources, timeout, concurrency, updateProgressCallback) {
+        let totalChecked = 0;
+        let totalValid = 0;
+        const totalSources = sources.length;
         
-        const selectedItems = state.data.filter(item => 
-          item.status === 'valid' && item.selected
+        // 将源分成多个批次进行并发检测
+        for (let i = 0; i < sources.length; i += concurrency) {
+            if (!state.checking) break;
+            
+            const batch = sources.slice(i, i + concurrency);
+            const batchPromises = batch.map(async (source) => {
+                const url = utils.fixUrl(source.url);
+                
+                // 更新状态为检测中
+                state.checkStatus[source.url] = {status: 'checking', valid: false};
+                utils.updateResultsList();
+                
+                // 执行检测
+                const result = await utils.checkSource(url, timeout);
+                
+                // 更新状态
+                state.checkStatus[source.url] = {
+                    status: 'checked',
+                    valid: result.valid,
+                    reason: result.reason,
+                    time: result.time
+                };
+                
+                // 如果检测有效，自动勾选
+                if(result.valid){
+                    state.selectedValidUrls.add(source.url);
+                }
+                
+                return {source, result};
+            });
+            
+            // 等待当前批次的所有检测完成
+            const batchResults = await Promise.allSettled(batchPromises);
+            
+            // 处理批次结果
+            for (const result of batchResults) {
+                if (result.status === 'fulfilled') {
+                    totalChecked++;
+                    if (result.value.result.valid) totalValid++;
+                    
+                    // 更新进度回调
+                    if (updateProgressCallback) {
+                        updateProgressCallback(totalChecked, totalSources, result.value.source, result.value.result);
+                    }
+                }
+            }
+            
+            // 批次之间短暂延迟，避免浏览器过载
+            if (state.checking && i + concurrency < sources.length) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        return {totalChecked, totalValid};
+    },
+    // 新增：检测当前页（并发版本）
+    async checkCurrentPage(){
+        const pageData=utils.getCurrentPageData();
+        if(pageData.length===0){
+            alert('当前页没有直播源！');
+            return {totalChecked:0,totalValid:0};
+        }
+        
+        // 更新进度显示
+        els.progressFill.style.width='0%';
+        els.checkProgressText.textContent=`当前页检测`;
+        els.checkDetails.textContent=`正在检测当前页，共${pageData.length}个直播源，并发数: ${state.concurrency}个...`;
+        
+        // 使用并发检测
+        const result = await utils.concurrentCheck(pageData, state.checkTimeout, state.concurrency, 
+            (checked, total, source, checkResult) => {
+                const progressPercent = Math.round(checked / total * 100);
+                els.progressFill.style.width = `${progressPercent}%`;
+                els.checkDetails.textContent = `当前页: ${checked}/${total} (${progressPercent}%) - ${source.name}: ${checkResult.valid?'有效':'无效'} (${checkResult.time}ms)`;
+            }
         );
         
-        if (selectedItems.length === 0) {
-          alert('请先在有效列表中选择要导出的直播源');
-          return;
+        return result;
+    },
+    // 新增：检测所有页（并发版本）
+    async checkAllPages(){
+        const totalPages=state.pagination.totalPages;
+        let totalChecked=0,totalValid=0;
+        
+        // 创建页面队列
+        state.allPagesCheckQueue=[];
+        for(let page=1;page<=totalPages;page++){
+            state.allPagesCheckQueue.push(page);
         }
         
-        const content = core.generateExportContent(selectedItems);
-        const blob = new Blob([content], { type: 'text/plain' });
+        // 逐个页面检测
+        while(state.allPagesCheckQueue.length>0&&state.checking){
+            const page=state.allPagesCheckQueue.shift();
+            
+            // 更新当前页码
+            state.pagination.currentPage=page;
+            utils.updateResultsList();
+            
+            // 获取当前页数据
+            const pageData=utils.getCurrentPageData();
+            
+            // 更新进度显示
+            const progressPercent=Math.round((state.allPagesCheckQueue.length)/totalPages*100);
+            const currentPercent=100-progressPercent;
+            els.progressFill.style.width=`${currentPercent}%`;
+            els.checkProgressText.textContent=`第${page}页/${totalPages}页`;
+            els.checkDetails.textContent=`正在检测第${page}页，共${pageData.length}个直播源，并发数: ${state.concurrency}个...`;
+            
+            // 使用并发检测当前页
+            const pageResult = await utils.concurrentCheck(pageData, state.checkTimeout, state.concurrency,
+                (checked, total, source, checkResult) => {
+                    const pageProgressPercent = Math.round(checked / total * 100);
+                    els.checkDetails.textContent = `第${page}页: ${checked}/${total} (${pageProgressPercent}%) - ${source.name}: ${checkResult.valid?'有效':'无效'} (${checkResult.time}ms)`;
+                }
+            );
+            
+            totalChecked += pageResult.totalChecked;
+            totalValid += pageResult.totalValid;
+            
+            // 检测完一页后，给浏览器喘息的机会
+            if(state.allPagesCheckQueue.length>0&&state.checking){
+                els.checkDetails.textContent=`第${page}页检测完成，等待3秒后继续下一页...`;
+                await new Promise(resolve=>setTimeout(resolve,3000)); // 等待3秒
+            }
+        }
+        
+        return {totalChecked,totalValid};
+    },
+    // 新增：分组检测（并发版本）
+    async checkByGroups(){
+        if(state.selectedGroups.length===0){
+            alert('请先在分组管理中选择要检测的分组！');
+            return {totalChecked:0,totalValid:0};
+        }
+        
+        // 获取选中分组的数据
+        const groupData=state.data.filter(item=>state.selectedGroups.includes(item.group));
+        if(groupData.length===0){
+            alert('选中的分组中没有直播源！');
+            return {totalChecked:0,totalValid:0};
+        }
+        
+        // 模拟分页检测（按每页10条分组）
+        const pageSize=10;
+        const totalPages=Math.ceil(groupData.length/pageSize);
+        let totalChecked=0,totalValid=0;
+        
+        for(let page=1;page<=totalPages;page++){
+            if(!state.checking)break;
+            
+            const startIndex=(page-1)*pageSize;
+            const endIndex=Math.min(page*pageSize,groupData.length);
+            const pageData=groupData.slice(startIndex,endIndex);
+            
+            // 更新进度显示
+            const progressPercent=Math.round((page-1)/totalPages*100);
+            els.progressFill.style.width=`${progressPercent}%`;
+            els.checkProgressText.textContent=`分组检测 ${page}/${totalPages}`;
+            els.checkDetails.textContent=`正在检测分组: ${state.selectedGroups.join(',')} - 第${page}页，共${pageData.length}个直播源，并发数: ${state.concurrency}个...`;
+            
+            // 使用并发检测当前页数据
+            const pageResult = await utils.concurrentCheck(pageData, state.checkTimeout, state.concurrency,
+                (checked, total, source, checkResult) => {
+                    const pageProgressPercent = Math.round(checked / total * 100);
+                    els.checkDetails.textContent = `分组检测: ${checked}/${total} (${pageProgressPercent}%) - ${source.name}: ${checkResult.valid?'有效':'无效'} (${checkResult.time}ms)`;
+                }
+            );
+            
+            totalChecked += pageResult.totalChecked;
+            totalValid += pageResult.totalValid;
+            
+            // 检测完一页后，给浏览器喘息的机会
+            if(page<totalPages&&state.checking){
+                els.checkDetails.textContent=`分组检测第${page}页完成，等待3秒后继续下一页...`;
+                await new Promise(resolve=>setTimeout(resolve,3000)); // 等待3秒
+            }
+        }
+        
+        return {totalChecked,totalValid};
+    },
+    // 新增：开始检测
+    async startChecking(mode){
+        if(state.data.length===0){
+            alert('没有可检测的直播源！');
+            return;
+        }
+        
+        state.checking=true;
+        state.currentCheckMode=mode;
+        
+        // 更新UI
+        els.checkPageBtn.style.display='none';
+        els.checkAllBtn.style.display='none';
+        els.checkGroupBtn.style.display='none';
+        els.stopCheckBtn.style.display='block';
+        els.checkProgress.style.display='block';
+        els.checkStatusText.textContent='检测中...';
+        
+        // 重置进度条
+        els.progressFill.style.width='0%';
+        els.checkProgressText.textContent='准备中...';
+        els.checkDetails.textContent='开始检测...';
+        
+        try{
+            let result;
+            if(mode==='currentPage'){
+                result=await utils.checkCurrentPage();
+            }else if(mode==='allPages'){
+                result=await utils.checkAllPages();
+            }else if(mode==='group'){
+                result=await utils.checkByGroups();
+            }
+            
+            // 检测完成
+            if(state.checking){
+                els.progressFill.style.width='100%';
+                els.checkProgressText.textContent='检测完成';
+                els.checkDetails.textContent=`检测完成！共检测${result.totalChecked}个直播源，其中${result.totalValid}个有效，${result.totalChecked-result.totalValid}个无效`;
+                els.checkStatusText.textContent='检测完成';
+                
+                // 显示结果摘要
+                setTimeout(()=>{
+                    alert(`检测完成！\n总计: ${result.totalChecked}个直播源\n有效: ${result.totalValid}个\n无效: ${result.totalChecked-result.totalValid}个\n并发数: ${state.concurrency}个`);
+                },500);
+            }
+        }catch(error){
+            console.error('检测过程中出错:',error);
+            els.checkDetails.textContent=`检测出错: ${error.message}`;
+            els.checkStatusText.textContent='检测出错';
+        }finally{
+            // 重置状态
+            state.checking=false;
+            els.checkPageBtn.style.display='block';
+            els.checkAllBtn.style.display='block';
+            els.checkGroupBtn.style.display='block';
+            els.stopCheckBtn.style.display='none';
+            els.checkStatusText.textContent='就绪';
+            
+            // 3秒后隐藏进度条
+            setTimeout(()=>{
+                if(!state.checking){
+                    els.checkProgress.style.display='none';
+                }
+            },3000);
+            
+            // 更新结果列表
+            utils.updateResultsList();
+        }
+    },
+    // 新增：停止检测
+    stopChecking(){
+        state.checking=false;
+        state.allPagesCheckQueue=[]; // 清空检测队列
+        els.checkPageBtn.style.display='block';
+        els.checkAllBtn.style.display='block';
+        els.checkGroupBtn.style.display='block';
+        els.stopCheckBtn.style.display='none';
+        els.checkProgressText.textContent='检测已取消';
+        els.checkDetails.textContent='用户取消了检测过程';
+        els.checkStatusText.textContent='已取消';
+    },
+    // 新增：获取检测统计
+    getCheckStats(){
+        let total=0,valid=0,invalid=0,unchecked=0;
+        
+        state.data.forEach(item=>{
+            const status=state.checkStatus[item.url];
+            if(status){
+                if(status.status==='checked'){
+                    total++;
+                    if(status.valid)valid++;
+                    else invalid++;
+                }else{
+                    unchecked++;
+                }
+            }else{
+                unchecked++;
+            }
+        });
+        
+        return {total,valid,invalid,unchecked};
+    },
+    // 新增：播放视频（内嵌版本）
+    playVideo(url, name){
+        state.currentPlayingUrl = url;
+        state.currentPlayingName = name;
+        state.isVideoPlaying = true;
+        
+        // 更新视频预览区域标题和URL信息
+        els.videoTitle.textContent = name;
+        els.videoUrl.textContent = `URL: ${url}`;
+        els.videoStatus.textContent = '正在加载...';
+        
+        // 隐藏占位符，显示加载中
+        els.videoPlaceholder.style.display = 'none';
+        els.videoLoading.style.display = 'block';
+        els.videoPlayer.style.display = 'none';
+        
+        // 设置视频源
+        els.videoSource.src = url;
+        els.videoPlayer.load();
+        
+        // 尝试播放
+        const playPromise = els.videoPlayer.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                // 播放成功，隐藏加载中，显示视频播放器
+                els.videoLoading.style.display = 'none';
+                els.videoPlayer.style.display = 'block';
+                els.videoStatus.textContent = '正在播放';
+            }).catch(error => {
+                // 播放失败，显示错误信息
+                console.error('播放失败:', error);
+                els.videoLoading.textContent = '播放失败，请检查格式或网络连接';
+                els.videoLoading.style.display = 'block';
+                els.videoPlayer.style.display = 'none';
+                els.videoStatus.textContent = '播放失败';
+            });
+        }
+    },
+    // 新增：关闭视频播放器
+    closeVideoPlayer(){
+        // 暂停视频
+        if(els.videoPlayer){
+            els.videoPlayer.pause();
+            els.videoPlayer.currentTime = 0;
+        }
+        
+        // 显示占位符，隐藏视频播放器和加载中
+        els.videoPlaceholder.style.display = 'block';
+        els.videoPlayer.style.display = 'none';
+        els.videoLoading.style.display = 'none';
+        
+        // 重置状态
+        state.currentPlayingUrl = '';
+        state.currentPlayingName = '';
+        state.isVideoPlaying = false;
+        els.videoStatus.textContent = '已停止';
+        els.videoTitle.textContent = '未选择频道';
+        els.videoUrl.textContent = 'URL: 无';
+    },
+    // 新增：重新加载视频
+    reloadVideo(){
+        if(state.currentPlayingUrl){
+            utils.playVideo(state.currentPlayingUrl, state.currentPlayingName);
+        }
+    },
+    // 新增：停止视频播放
+    stopVideo(){
+        utils.closeVideoPlayer();
+    },
+    // 新增：切换筛选
+    setFilter(filter){
+        state.currentFilter = filter;
+        
+        // 更新筛选按钮状态
+        els.filterAllBtn.classList.remove('active');
+        els.filterValidBtn.classList.remove('active');
+        els.filterInvalidBtn.classList.remove('active');
+        
+        if(filter === 'all'){
+            els.filterAllBtn.classList.add('active');
+        }else if(filter === 'valid'){
+            els.filterValidBtn.classList.add('active');
+        }else if(filter === 'invalid'){
+            els.filterInvalidBtn.classList.add('active');
+        }
+        
+        // 重置到第一页
+        state.pagination.currentPage = 1;
+        
+        // 更新结果列表
+        utils.updateResultsList();
+    },
+    // 新增：全部勾选有效结果
+    selectAllValid(){
+        const validData = utils.getAllValidData();
+        validData.forEach(item => {
+            state.selectedValidUrls.add(item.url);
+        });
+        utils.updateResultsList();
+    },
+    // 新增：全部取消勾选有效结果
+    deselectAllValid(){
+        state.selectedValidUrls.clear();
+        utils.updateResultsList();
+    },
+    // 新增：导出勾选的有效结果
+    exportValidSelected(){
+        // 获取所有勾选的有效源
+        const dataToExport = state.data.filter(item => 
+            state.selectedValidUrls.has(item.url) && 
+            state.checkStatus[item.url] && 
+            state.checkStatus[item.url].status === 'checked' && 
+            state.checkStatus[item.url].valid === true
+        );
+        
+        if(dataToExport.length === 0) {
+            alert('请先勾选要导出的有效直播源！');
+            return;
+        }
+        
+        // 按分组组织数据，保持原始导入格式
+        const groupMap = new Map();
+        const groupOrder = []; // 保持分组顺序
+        
+        // 首先添加分组信息行
+        dataToExport.forEach(item => {
+            const group = item.group;
+            if(!groupMap.has(group)) {
+                groupMap.set(group, []);
+                groupOrder.push(group);
+            }
+            
+            // 获取原始导入行，如果存在则使用，否则构建新行
+            const originalLine = state.importData.sources[item.url] ? 
+                state.importData.sources[item.url].originalLine : 
+                `${item.name},${item.url}`;
+            groupMap.get(group).push(originalLine);
+        });
+        
+        // 构建导出内容
+        const lines = [];
+        
+        // 按照原始分组顺序添加分组
+        groupOrder.forEach(group => {
+            // 添加分组标题行
+            if(state.importData.groupInfo[group]) {
+                // 使用原始分组信息行
+                lines.push(state.importData.groupInfo[group]);
+            } else if(group !== '默认分组') {
+                // 构建新的分组信息行
+                lines.push(`${group},#genre#${group}`);
+            }
+            
+            // 添加该分组下的所有频道
+            const channels = groupMap.get(group);
+            channels.forEach(channel => {
+                lines.push(channel);
+            });
+        });
+        
+        // 如果没有有效的分组数据，添加默认分组
+        if(lines.length === 0) {
+            lines.push('默认分组,#genre#默认分组');
+        }
+        
+        const blob = new Blob([lines.join('\n')], {type: 'text/plain;charset=utf-8'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
-        // 根据格式选择文件名
-        const hasM3UFormat = selectedItems.some(item => {
-          const sourceInfo = state.importData.sources[item.url];
-          return sourceInfo && sourceInfo.format === 'm3u';
-        });
-        
-        a.download = hasM3UFormat ? '有效直播源.m3u' : '有效直播源.txt';
+        a.download = `有效直播源_${new Date().toISOString().slice(0,10)}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        alert(`成功导出${selectedItems.length}个有效直播源（${hasM3UFormat ? 'M3U格式' : '标准格式'}）`);
-      });
-      
-      bindButton('closeVideoBtn', () => {
-        utils.stopVideo();
-      });
-      
-      core.update();
+        alert(`成功导出${dataToExport.length}个有效直播源`);
+    },
+    // 新增：导出所有有效结果
+    exportAllValid(){
+        const validData = utils.getAllValidData();
+        
+        if(validData.length === 0) {
+            alert('没有有效的直播源可以导出！');
+            return;
+        }
+        
+        // 按分组组织数据，保持原始导入格式
+        const groupMap = new Map();
+        const groupOrder = []; // 保持分组顺序
+        
+        // 首先添加分组信息行
+        validData.forEach(item => {
+            const group = item.group;
+            if(!groupMap.has(group)) {
+                groupMap.set(group, []);
+                groupOrder.push(group);
+            }
+            
+            // 获取原始导入行，如果存在则使用，否则构建新行
+            const originalLine = state.importData.sources[item.url] ? 
+                state.importData.sources[item.url].originalLine : 
+                `${item.name},${item.url}`;
+            groupMap.get(group).push(originalLine);
+        });
+        
+        // 构建导出内容
+        const lines = [];
+        
+        // 按照原始分组顺序添加分组
+        groupOrder.forEach(group => {
+            // 添加分组标题行
+            if(state.importData.groupInfo[group]) {
+                // 使用原始分组信息行
+                lines.push(state.importData.groupInfo[group]);
+            } else if(group !== '默认分组') {
+                // 构建新的分组信息行
+                lines.push(`${group},#genre#${group}`);
+            }
+            
+            // 添加该分组下的所有频道
+            const channels = groupMap.get(group);
+            channels.forEach(channel => {
+                lines.push(channel);
+            });
+        });
+        
+        // 如果没有有效的分组数据，添加默认分组
+        if(lines.length === 0) {
+            lines.push('默认分组,#genre#默认分组');
+        }
+        
+        const blob = new Blob([lines.join('\n')], {type: 'text/plain;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `所有有效直播源_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert(`成功导出${validData.length}个有效直播源`);
     }
-  };
-  
-  // 初始化
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', events.init);
-  } else {
-    events.init();
-  }
+};
+
+const fetchUrl=async u=>{const f=utils.fixUrl(u);const c=new AbortController();const t=setTimeout(()=>c.abort(),10000);
+try{const r=await fetch(f,{signal:c.signal,headers:{'User-Agent':'Mozilla/5.0'}});clearTimeout(t);if(r.ok)return await r.text();
+throw new Error(`HTTP错误:${r.status}`)}catch{clearTimeout(t);try{const p=`https://api.allorigins.win/raw?url=${encodeURIComponent(f)}`;
+const r=await fetch(p,{signal:c.signal});if(r.ok)return await r.text();throw new Error('代理服务器错误')}catch{throw new Error('无法访问URL')}}};
+
+const initEvents=()=>{
+    els.localImportBtn.onclick=()=>els.fileInput.click();
+    els.fileInput.onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!f.name.match(/\.(txt|m3u|m3u8)$/i)){alert('请选择.txt、.m3u或.m3u8格式的文件');return}
+    try{const t=await f.text();const s=utils.parseSourceText(t);if(!s.length){alert('未找到有效的直播源');return}
+    const r=utils.addSources(s);utils.updateStats();utils.updateResultsList();
+    alert(`导入成功，新增${r.added}个直播源${r.duplicates?`，跳过${r.duplicates}个重复项`:''}`);els.fileInput.value=''}catch{alert('文件读取失败')}};
+    els.networkImportBtn.onclick=()=>{els.networkUrl.value='';els.networkStatus.style.display='none';els.networkModal.style.display='block';
+    setTimeout(()=>els.networkUrl.focus(),300)};
+    els.cancelImportBtn.onclick=()=>utils.hideModal('networkModal');
+    els.confirmImportBtn.onclick=async()=>{const u=els.networkUrl.value.trim();if(!u){utils.showStatus('请输入URL地址',true);return}
+    utils.showLoading(true);els.confirmImportBtn.disabled=true;try{const t=await fetchUrl(u);if(!t||!t.trim().length)throw new Error('文件内容为空');
+    const s=utils.parseSourceText(t);if(!s.length)throw new Error('未找到有效的直播源');const r=utils.addSources(s);
+    utils.updateStats();utils.updateResultsList();utils.showStatus(`导入成功，新增${r.added}个直播源${r.duplicates?`，跳过${r.duplicates}个重复项`:''}`,false);
+    setTimeout(()=>utils.hideModal('networkModal'),2000)}catch(e){utils.showStatus(`导入失败:${e.message}`,true)}finally{utils.showLoading(false);els.confirmImportBtn.disabled=false}};
+    els.groupBtn.onclick=()=>{state.selectedGroups=Array.from(state.groups);utils.updateGroupList();els.groupModal.style.display='block'};
+    els.groupCheckboxes.onclick=e=>{const g=e.target.closest('.group-item');if(g){const gp=g.getAttribute('data-group');
+    const i=state.selectedGroups.indexOf(gp);i>-1?state.selectedGroups.splice(i,1):state.selectedGroups.push(gp);utils.updateGroupList()}};
+    els.selectAllGroupsBtn.onclick=()=>{state.selectedGroups=Array.from(state.groups);utils.updateGroupList()};
+    els.deselectAllGroupsBtn.onclick=()=>{state.selectedGroups=[];utils.updateGroupList()};
+    els.closeGroupBtn.onclick=()=>utils.hideModal('groupModal');
+    els.clearBtn.onclick=()=>{if(!state.data.length){alert('没有数据可以清空');return}
+    if(confirm(`确定要清空所有${state.data.length}个直播源吗？`)){state.data=[];state.groups.clear();state.importData={groupInfo:{},sources:{}};
+    state.selectedGroups=[];state.duplicates=0;state.checkStatus={};state.selectedValidUrls.clear();state.pagination.currentPage=1;utils.updateStats();utils.updateResultsList();alert('已清空所有数据')}};
+    els.pageSizeInput.onchange=()=>{let ps=parseInt(els.pageSizeInput.value);if(isNaN(ps)||ps<5)ps=5;else if(ps>100)ps=100;
+    state.pagination.pageSize=ps;state.pagination.currentPage=1;utils.updateResultsList()};
+    els.pageSizeInput.onkeypress=e=>{if(e.key==='Enter')els.pageSizeInput.blur()};
+    els.firstPageBtn.onclick=()=>{if(state.pagination.currentPage>1){state.pagination.currentPage=1;utils.updateResultsList()}};
+    els.prevPageBtn.onclick=()=>{if(state.pagination.currentPage>1){state.pagination.currentPage--;utils.updateResultsList()}};
+    els.nextPageBtn.onclick=()=>{const p=utils.calculatePagination();if(state.pagination.currentPage<p.totalPages){state.pagination.currentPage++;utils.updateResultsList()}};
+    els.lastPageBtn.onclick=()=>{const p=utils.calculatePagination();if(state.pagination.currentPage<p.totalPages){state.pagination.currentPage=p.totalPages;utils.updateResultsList()}};
+    els.pageNumbers.onclick=e=>{if(e.target.classList.contains('page-btn')&&!e.target.classList.contains('active')){
+    const p=parseInt(e.target.getAttribute('data-page'));if(!isNaN(p)&&p>=1&&p<=state.pagination.totalPages){state.pagination.currentPage=p;utils.updateResultsList()}}};
+    document.addEventListener('click',e=>{if(e.target.classList.contains('modal'))e.target.style.display='none'});
+    els.networkUrl.onkeypress=e=>{if(e.key==='Enter')els.confirmImportBtn.click()};
+    els.clearBtn.oncontextmenu=e=>{e.preventDefault();if(state.duplicates){if(confirm(`检测到${state.duplicates}个重复项，是否删除所有重复项？`)){
+    if(utils.removeDuplicates()){utils.updateStats();utils.updateResultsList()}}}else alert('没有检测到重复项')};
+    
+    // 新增事件监听
+    // 超时滑块控制
+    els.timeoutSlider.oninput=function(){
+        const value=parseInt(this.value);
+        state.checkTimeout=value;
+        els.timeoutValue.textContent=`${value}秒`;
+    };
+    
+    // 并发滑块控制
+    els.concurrencySlider.oninput=function(){
+        const value=parseInt(this.value);
+        state.concurrency=value;
+        els.concurrencyValue.textContent=`${value}个`;
+        els.concurrentStatus.textContent=`并发:${value}个`;
+    };
+    
+    // 检测当前页按钮
+    els.checkPageBtn.onclick=function(){
+        if(!state.checking){
+            utils.startChecking('currentPage');
+        }
+    };
+    
+    // 检测全部页按钮
+    els.checkAllBtn.onclick=function(){
+        if(!state.checking){
+            utils.startChecking('allPages');
+        }
+    };
+    
+    // 分组检测按钮
+    els.checkGroupBtn.onclick=function(){
+        if(!state.checking){
+            utils.startChecking('group');
+        }
+    };
+    
+    // 停止检测按钮
+    els.stopCheckBtn.onclick=function(){
+        if(state.checking){
+            utils.stopChecking();
+        }
+    };
+    
+    // 取消检测按钮
+    els.checkCancelBtn.onclick=function(){
+        if(state.checking){
+            utils.stopChecking();
+        }
+    };
+    
+    // 视频播放器关闭按钮
+    els.closeVideoBtn.onclick=function(){
+        utils.closeVideoPlayer();
+    };
+    
+    // 重新加载视频按钮
+    els.reloadVideoBtn.onclick=function(){
+        utils.reloadVideo();
+    };
+    
+    // 停止视频按钮
+    els.stopVideoBtn.onclick=function(){
+        utils.stopVideo();
+    };
+    
+    // 筛选按钮事件
+    els.filterAllBtn.onclick=function(){
+        utils.setFilter('all');
+    };
+    
+    els.filterValidBtn.onclick=function(){
+        utils.setFilter('valid');
+    };
+    
+    els.filterInvalidBtn.onclick=function(){
+        utils.setFilter('invalid');
+    };
+    
+    // 全部勾选有效结果按钮
+    els.selectAllValidBtn.onclick=function(){
+        utils.selectAllValid();
+    };
+    
+    // 全部取消勾选有效结果按钮
+    els.deselectAllValidBtn.onclick=function(){
+        utils.deselectAllValid();
+    };
+    
+    // 导出勾选的有效结果按钮
+    els.exportValidSelectedBtn.onclick=function(){
+        utils.exportValidSelected();
+    };
+    
+    // 勾选框点击事件（事件委托）
+    els.resultsList.addEventListener('change', function(e){
+        if(e.target.classList.contains('result-checkbox')){
+            const url = e.target.getAttribute('data-url');
+            const checked = e.target.checked;
+            
+            if(checked){
+                state.selectedValidUrls.add(url);
+            }else{
+                state.selectedValidUrls.delete(url);
+            }
+            
+            // 更新有效结果统计
+            utils.updateResultsList();
+        }
+    });
+    
+    // 播放按钮点击事件（事件委托）
+    els.resultsList.addEventListener('click', function(e){
+        if(e.target.classList.contains('play-btn')){
+            const url = e.target.getAttribute('data-url');
+            const name = e.target.getAttribute('data-name');
+            utils.playVideo(url, name);
+        }
+    });
+    
+    // 视频播放器事件
+    els.videoPlayer.addEventListener('playing', function(){
+        els.videoLoading.style.display = 'none';
+        els.videoPlayer.style.display = 'block';
+        els.videoStatus.textContent = '正在播放';
+    });
+    
+    els.videoPlayer.addEventListener('waiting', function(){
+        els.videoLoading.style.display = 'block';
+        els.videoLoading.textContent = '缓冲中...';
+        els.videoStatus.textContent = '缓冲中...';
+    });
+    
+    els.videoPlayer.addEventListener('canplay', function(){
+        els.videoLoading.style.display = 'none';
+        els.videoPlayer.style.display = 'block';
+        els.videoStatus.textContent = '准备就绪';
+    });
+    
+    els.videoPlayer.addEventListener('ended', function(){
+        els.videoStatus.textContent = '播放结束';
+    });
+    
+    els.videoPlayer.addEventListener('error', function(){
+        els.videoLoading.textContent = '播放错误，请检查视频格式或网络连接';
+        els.videoLoading.style.display = 'block';
+        els.videoPlayer.style.display = 'none';
+        els.videoStatus.textContent = '播放错误';
+    });
+    
+    // 更新检测状态文本
+    setInterval(() => {
+        if(!state.checking){
+            const stats = utils.getCheckStats();
+            els.checkStatusText.textContent = `已检测: ${stats.valid}有效 ${stats.invalid}无效 ${stats.unchecked}未检`;
+        }
+    }, 2000);
+};
+
+const init=()=>{
+    initEvents();
+    utils.updateStats();
+    utils.updateResultsList();
+    // 初始化视频播放器状态
+    utils.closeVideoPlayer();
+};
+
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 })();
 </script>
 </body>
