@@ -38,13 +38,54 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 .status{padding:6px;border-radius:3px;margin:8px 0;display:none;font-size:13px}
 .status.success{background:#d4edda;color:#155724}
 .status.error{background:#f8d7da;color:#721c24}
-.group-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
-.group-item{padding:6px;border:1px solid #ddd;border-radius:4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center}
-.group-item:hover{background:#f8f9fa}
-.group-item.selected{background:#e9f5ff;border-color:#007bff}
-.group-name{font-weight:bold;color:#007bff;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
-.group-count{color:#666;font-size:10px;margin-top:2px}
-.group-checkbox{width:14px;height:14px;cursor:pointer;margin-bottom:4px}
+/* 修改分组网格为5x5排列，增大字体 */
+.group-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin-top:12px
+}
+.group-item{
+  padding:8px;
+  border:1px solid #ddd;
+  border-radius:4px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  min-height:70px;
+  justify-content:center;
+}
+.group-item:hover{
+  background:#f8f9fa
+}
+.group-item.selected{
+  background:#e9f5ff;
+  border-color:#007bff
+}
+/* 增大字体 */
+.group-name{
+  font-weight:bold;
+  color:#007bff;
+  font-size:14px; /* 从11px增大到14px */
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  width:100%;
+  margin-bottom:3px;
+}
+.group-count{
+  color:#666;
+  font-size:12px; /* 从10px增大到12px */
+  margin-top:2px;
+}
+.group-checkbox{
+  width:16px; /* 从14px增大到16px */
+  height:16px; /* 从14px增大到16px */
+  cursor:pointer;
+  margin-bottom:6px; /* 从4px增大到6px */
+}
 .control-panel{margin:10px 0;padding:12px;background:#f8f9fa;border-radius:4px;border:1px solid #ddd}
 .control-row{display:flex;align-items:center;margin:8px 0;gap:10px;flex-wrap:wrap}
 .control-label{min-width:100px;font-weight:bold;color:#333;font-size:14px}
@@ -129,10 +170,16 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 
 @media (max-width: 1200px) {
     .video-preview{max-height:55vh}
+    .group-grid{
+      grid-template-columns:repeat(4,1fr); /* 大屏幕下改为4列 */
+    }
 }
 
 @media (max-width: 992px) {
     .video-preview{max-height:50vh}
+    .group-grid{
+      grid-template-columns:repeat(3,1fr); /* 中等屏幕下改为3列 */
+    }
 }
 
 @media (max-width: 768px) {
@@ -146,7 +193,16 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     .channel-name{min-width:100px;font-size:13px}
     .source-url{font-size:12px}
     .status-badge{font-size:10px;padding:2px 4px}
-    .group-grid{grid-template-columns:repeat(2,1fr);gap:5px}
+    .group-grid{
+      grid-template-columns:repeat(2,1fr); /* 小屏幕下改为2列 */
+      gap:6px;
+    }
+    .group-name{
+      font-size:13px; /* 在小屏幕下略微减小 */
+    }
+    .group-count{
+      font-size:11px; /* 在小屏幕下略微减小 */
+    }
     .control-label{min-width:90px;font-size:13px}
     .control-slider{min-width:120px}
     .control-value{min-width:40px;font-size:13px}
@@ -162,7 +218,19 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 @media (max-width: 576px) {
     .header h1{font-size:16px}
     .btn{padding:6px;font-size:12px;min-width:60px}
-    .group-grid{grid-template-columns:repeat(2,1fr)}
+    .group-grid{
+      grid-template-columns:repeat(2,1fr); /* 手机屏幕下保持2列 */
+    }
+    .group-item{
+      padding:6px;
+      min-height:60px;
+    }
+    .group-name{
+      font-size:12px;
+    }
+    .group-count{
+      font-size:10px;
+    }
     .control-label{min-width:80px;font-size:12px}
     .control-slider{min-width:100px}
     .control-value{min-width:35px;font-size:12px}
