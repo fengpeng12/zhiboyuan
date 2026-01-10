@@ -1317,8 +1317,19 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       }
     },
     
-    start: async () => {
+    // 修改start方法，添加分组过滤参数
+    start: async (selectedGroups) => {
       if (detector.running || state.data.length === 0) return;
+      
+      // 如果传入了选中的分组，则只检测这些分组的源
+      let sourcesToTest = state.data;
+      if (selectedGroups && selectedGroups.length > 0) {
+        sourcesToTest = state.data.filter(source => selectedGroups.includes(source.group));
+        if (sourcesToTest.length === 0) {
+          alert('选中的分组没有直播源');
+          return;
+        }
+      }
       
       detector.running = true;
       state.detectionStats = {
@@ -1336,7 +1347,11 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       el.testBtn.classList.remove('green');
       el.testBtn.classList.add('red');
       
-      detector.queue = state.data.map((source, index) => ({ source, index }));
+      // 使用过滤后的源创建队列
+      detector.queue = sourcesToTest.map((source, index) => ({ 
+        source, 
+        index: state.data.indexOf(source) // 使用原始索引
+      }));
       
       detector.workers = [];
       const workerCount = Math.min(detector.concurrency, detector.queue.length);
@@ -1511,24 +1526,14 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         core.updateGroupCheckboxes();
       };
       
-      // 检测选中分组
+      // 修复后的检测选中分组功能
       document.getElementById('testSelectedGroupsBtn').onclick = async () => {
         if (state.selectedGroups.length === 0) {
           alert('请至少选择一个分组');
           return;
         }
         
-        const sources = state.data.filter(i => state.selectedGroups.includes(i.group));
-        if (sources.length === 0) {
-          alert('选中的分组没有直播源');
-          return;
-        }
-        
-        const originalData = [...state.data];
-        data = sources;
-        await detector.start();
-        state.data = originalData;
-        core.update();
+        await detector.start(state.selectedGroups);
         el.groupModal.style.display = 'none';
       };
       
