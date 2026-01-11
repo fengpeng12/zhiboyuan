@@ -24,6 +24,25 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 .source-item{padding:6px;margin-bottom:4px;background:#f8f9fa;border-radius:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .channel-name{font-weight:bold;color:#333;min-width:120px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .source-url{flex:1;word-break:break-all;font-size:13px;color:#666;min-width:150px}
+/* 分辨率显示样式 */
+.resolution-display{
+  padding:2px 6px;
+  border-radius:3px;
+  font-size:11px;
+  color:#fff;
+  background:#6c757d;
+  min-width:60px;
+  text-align:center;
+  font-family:monospace;
+  cursor:help;
+}
+.resolution-unknown{background:#6c757d}
+.resolution-low{background:#dc3545}
+.resolution-medium{background:#ffc107;color:#333}
+.resolution-hd{background:#28a745}
+.resolution-fhd{background:#007bff}
+.resolution-2k{background:#6f42c1}
+.resolution-4k{background:#fd7e14}
 .status-badge{padding:3px 6px;border-radius:3px;font-size:11px;color:#fff;min-width:35px;text-align:center}
 .status-valid{background:#28a745}
 .status-invalid{background:#dc3545}
@@ -68,7 +87,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 .group-name{
   font-weight:bold;
   color:#007bff;
-  font-size:14px; /* 从11px增大到14px */
+  font-size:14px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -77,14 +96,14 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 }
 .group-count{
   color:#666;
-  font-size:12px; /* 从10px增大到12px */
+  font-size:12px;
   margin-top:2px;
 }
 .group-checkbox{
-  width:16px; /* 从14px增大到16px */
-  height:16px; /* 从14px增大到16px */
+  width:16px;
+  height:16px;
   cursor:pointer;
-  margin-bottom:6px; /* 从4px增大到6px */
+  margin-bottom:6px;
 }
 .control-panel{margin:10px 0;padding:12px;background:#f8f9fa;border-radius:4px;border:1px solid #ddd}
 .control-row{display:flex;align-items:center;margin:8px 0;gap:10px;flex-wrap:wrap}
@@ -117,6 +136,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 .list-btn.select-all{background:#28a745;color:white}
 .list-btn.deselect-all{background:#6c757d;color:white}
 .list-btn.export-selected{background:#6f42c1;color:white}
+.list-btn.export-hd{background:#fd7e14;color:white}
 .list-btn:hover{opacity:0.9}
 /* 视频预览框样式 - 高度自适应 */
 .video-preview-container{
@@ -127,7 +147,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
   display:none;
   flex-shrink:0;
   box-shadow:0 2px 8px rgba(0,0,0,0.1);
-  background:#000; /* 背景改为黑色，与视频黑边一致 */
+  background:#000;
 }
 .video-preview-header{
   padding:8px;
@@ -141,8 +161,8 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 }
 .video-preview{
   width:100%;
-  min-height:180px; /* 最小高度 */
-  max-height:60vh; /* 最大高度为视口的60% */
+  min-height:180px;
+  max-height:60vh;
   background:#000;
   position:relative;
   display:flex;
@@ -153,7 +173,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 .video-preview video{
   max-width:100%;
   max-height:100%;
-  object-fit:contain; /* 保持原始宽高比 */
+  object-fit:contain;
 }
 .close-preview{
   background:none;
@@ -171,14 +191,14 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 @media (max-width: 1200px) {
     .video-preview{max-height:55vh}
     .group-grid{
-      grid-template-columns:repeat(4,1fr); /* 大屏幕下改为4列 */
+      grid-template-columns:repeat(4,1fr);
     }
 }
 
 @media (max-width: 992px) {
     .video-preview{max-height:50vh}
     .group-grid{
-      grid-template-columns:repeat(3,1fr); /* 中等屏幕下改为3列 */
+      grid-template-columns:repeat(3,1fr);
     }
 }
 
@@ -193,15 +213,16 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     .channel-name{min-width:100px;font-size:13px}
     .source-url{font-size:12px}
     .status-badge{font-size:10px;padding:2px 4px}
+    .resolution-display{font-size:10px;min-width:50px}
     .group-grid{
-      grid-template-columns:repeat(2,1fr); /* 小屏幕下改为2列 */
+      grid-template-columns:repeat(2,1fr);
       gap:6px;
     }
     .group-name{
-      font-size:13px; /* 在小屏幕下略微减小 */
+      font-size:13px;
     }
     .group-count{
-      font-size:11px; /* 在小屏幕下略微减小 */
+      font-size:11px;
     }
     .control-label{min-width:90px;font-size:13px}
     .control-slider{min-width:120px}
@@ -218,8 +239,10 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
 @media (max-width: 576px) {
     .header h1{font-size:16px}
     .btn{padding:6px;font-size:12px;min-width:60px}
+    .channel-name{min-width:80px;font-size:12px}
+    .resolution-display{font-size:9px;min-width:45px}
     .group-grid{
-      grid-template-columns:repeat(2,1fr); /* 手机屏幕下保持2列 */
+      grid-template-columns:repeat(2,1fr);
     }
     .group-item{
       padding:6px;
@@ -251,7 +274,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
   <div class="header"><h1>直播源管理</h1></div>
   
   <div class="section">
-    <div class="info">已导入 <span id="totalCount">0</span> 个直播源 | <span id="groupCount">0</span> 个分组</div>
+    <div class="info">已导入 <span id="totalCount">0</span> 个直播源 | <span id="groupCount">0</span> 个分组 | 高清源: <span id="hdCount">0</span> 个 (1080P+)</div>
     <div class="buttons">
       <button class="btn blue" id="localImportBtn">本地导入</button>
       <button class="btn purple" id="networkImportBtn">网络导入</button>
@@ -261,7 +284,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
   
   <div class="section" id="detectionPanel">
     <div class="control-panel">
-      <div class="info">直播源检测控制</div>
+      <div class="info">直播源检测控制 (检测标准: loadeddata + canplay)</div>
       
       <div class="control-row">
         <span class="control-label">检测超时(秒):</span>
@@ -333,12 +356,14 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       <button class="list-tab active" data-filter="all">全部 <span class="list-count" id="countAll">0</span></button>
       <button class="list-tab" data-filter="valid">有效 <span class="list-count" id="countValid">0</span></button>
       <button class="list-tab" data-filter="invalid">无效 <span class="list-count" id="countInvalid">0</span></button>
+      <button class="list-tab" data-filter="hd">高清 <span class="list-count" id="countHD">0</span></button>
     </div>
     
     <div class="list-buttons">
       <button class="list-btn select-all" id="selectAllBtn">全部勾选</button>
       <button class="list-btn deselect-all" id="deselectAllBtn">全部取消</button>
       <button class="list-btn export-selected" id="exportSelectedBtn">导出勾选</button>
+      <button class="list-btn export-hd" id="exportHDBtn">导出高清源 (1080P+)</button>
     </div>
     
     <div class="source-list" id="sourceList">
@@ -423,6 +448,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     groupCount: document.getElementById('groupCount'),
     validCount: document.getElementById('validCount'),
     invalidCount: document.getElementById('invalidCount'),
+    hdCount: document.getElementById('hdCount'),
     sourceList: document.getElementById('sourceList'),
     groupCheckboxes: document.getElementById('groupCheckboxes'),
     networkUrl: document.getElementById('networkUrl'),
@@ -446,10 +472,12 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     countAll: document.getElementById('countAll'),
     countValid: document.getElementById('countValid'),
     countInvalid: document.getElementById('countInvalid'),
+    countHD: document.getElementById('countHD'),
     listTabs: document.getElementById('listTabs'),
     selectAllBtn: document.getElementById('selectAllBtn'),
     deselectAllBtn: document.getElementById('deselectAllBtn'),
     exportSelectedBtn: document.getElementById('exportSelectedBtn'),
+    exportHDBtn: document.getElementById('exportHDBtn'),
     videoPreviewContainer: document.getElementById('videoPreviewContainer'),
     previewVideo: document.getElementById('previewVideo'),
     currentChannelName: document.getElementById('currentChannelName'),
@@ -496,7 +524,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         btn.disabled = !enable;
       });
       
-      const actionBtns = ['selectAllBtn', 'deselectAllBtn', 'exportSelectedBtn'];
+      const actionBtns = ['selectAllBtn', 'deselectAllBtn', 'exportSelectedBtn', 'exportHDBtn'];
       actionBtns.forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.disabled = !enable;
@@ -525,6 +553,139 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     // 生成简单的ID
     generateId: (name) => {
       return name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    },
+    
+    // 获取分辨率分类
+    getResolutionClass: (width, height) => {
+      if (!width || !height || width === 0 || height === 0) {
+        return 'resolution-unknown';
+      }
+      
+      // 计算总像素数
+      const totalPixels = width * height;
+      
+      // 定义分辨率标准（像素数）
+      const STANDARDS = {
+        LOW: 640 * 480,
+        MEDIUM: 1280 * 720,
+        HD: 1920 * 1080,
+        FHD: 1920 * 1080,
+        TWO_K: 2560 * 1440,
+        FOUR_K: 3840 * 2160
+      };
+      
+      // 检查是否为4K
+      if (totalPixels >= STANDARDS.FOUR_K * 0.9) {
+        return 'resolution-4k';
+      }
+      
+      // 检查是否为2K
+      if (totalPixels >= STANDARDS.TWO_K * 0.9) {
+        return 'resolution-2k';
+      }
+      
+      // 检查是否为1080P
+      if (totalPixels >= STANDARDS.FHD * 0.9) {
+        return 'resolution-fhd';
+      }
+      
+      // 检查是否为720P
+      if (totalPixels >= STANDARDS.HD * 0.9) {
+        return 'resolution-hd';
+      }
+      
+      // 检查是否为中等分辨率
+      if (totalPixels >= STANDARDS.MEDIUM * 0.9) {
+        return 'resolution-medium';
+      }
+      
+      // 低分辨率
+      return 'resolution-low';
+    },
+    
+    // 格式化分辨率显示
+    formatResolution: (width, height) => {
+      if (!width || !height || width === 0 || height === 0) {
+        return '未知';
+      }
+      
+      // 计算总像素数
+      const totalPixels = width * height;
+      
+      // 定义分辨率标准（像素数）
+      const STANDARDS = {
+        FOUR_K: 3840 * 2160,
+        TWO_K: 2560 * 1440,
+        FHD: 1920 * 1080,
+        HD: 1280 * 720,
+        MEDIUM: 854 * 480,
+        LOW: 640 * 480
+      };
+      
+      // 判断分辨率等级
+      if (totalPixels >= STANDARDS.FOUR_K * 0.9) {
+        return '4K';
+      } else if (totalPixels >= STANDARDS.TWO_K * 0.9) {
+        return '2K';
+      } else if (totalPixels >= STANDARDS.FHD * 0.9) {
+        return '1080P';
+      } else if (totalPixels >= STANDARDS.HD * 0.9) {
+        return '720P';
+      } else if (totalPixels >= STANDARDS.MEDIUM * 0.9) {
+        return '480P';
+      } else if (totalPixels >= STANDARDS.LOW * 0.9) {
+        return '360P';
+      } else {
+        return `${width}x${height}`;
+      }
+    },
+    
+    // 判断是否为高清源 (1080P及以上)
+    isHDSource: (width, height) => {
+      if (!width || !height || width === 0 || height === 0) {
+        return false;
+      }
+      
+      // 计算总像素数
+      const totalPixels = width * height;
+      
+      const FHD_STANDARD = 1920 * 1080;
+      
+      return totalPixels >= FHD_STANDARD * 0.9;
+    },
+    
+    // 获取分辨率等级名称
+    getResolutionLevel: (width, height) => {
+      if (!width || !height || width === 0 || height === 0) {
+        return '未知';
+      }
+      
+      const totalPixels = width * height;
+      
+      const STANDARDS = {
+        FOUR_K: 3840 * 2160,
+        TWO_K: 2560 * 1440,
+        FHD: 1920 * 1080,
+        HD: 1280 * 720,
+        MEDIUM: 854 * 480,
+        LOW: 640 * 480
+      };
+      
+      if (totalPixels >= STANDARDS.FOUR_K * 0.9) {
+        return '4K';
+      } else if (totalPixels >= STANDARDS.TWO_K * 0.9) {
+        return '2K';
+      } else if (totalPixels >= STANDARDS.FHD * 0.9) {
+        return '1080P';
+      } else if (totalPixels >= STANDARDS.HD * 0.9) {
+        return '720P';
+      } else if (totalPixels >= STANDARDS.MEDIUM * 0.9) {
+        return '480P';
+      } else if (totalPixels >= STANDARDS.LOW * 0.9) {
+        return '360P';
+      } else {
+        return '低清';
+      }
     }
   };
   
@@ -536,25 +697,21 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       
       if (!videoElement) return;
       
-      // 视频加载错误处理
       videoElement.addEventListener('error', (e) => {
         console.error('视频加载错误:', e);
         alert('无法播放此视频源，可能链接已失效或格式不支持');
       });
       
-      // 视频元数据加载完成时调整尺寸
       videoElement.addEventListener('loadedmetadata', () => {
         videoPlayer.adjustVideoSize();
       });
       
-      // 窗口大小改变时调整视频尺寸
       window.addEventListener('resize', () => {
         if (state.currentVideoUrl) {
           videoPlayer.adjustVideoSize();
         }
       });
       
-      // 关闭预览按钮事件
       el.closePreviewBtn.onclick = () => {
         videoPlayer.stop();
       };
@@ -571,24 +728,19 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         const videoWidth = videoElement.videoWidth;
         const videoHeight = videoElement.videoHeight;
         
-        // 计算最大可用高度
-        const maxHeight = Math.min(window.innerHeight * 0.6, 800); // 最大为视口的60%或800px
+        const maxHeight = Math.min(window.innerHeight * 0.6, 800);
         const maxWidth = container.clientWidth;
         
-        // 计算保持原始宽高比的最佳尺寸
         let width = maxWidth;
         let height = (width / videoWidth) * videoHeight;
         
-        // 如果高度超过最大高度，则重新计算
         if (height > maxHeight) {
           height = maxHeight;
           width = (height / videoHeight) * videoWidth;
         }
         
-        // 确保高度不低于最小值
         height = Math.max(height, 180);
         
-        // 设置视频尺寸
         videoElement.style.width = width + 'px';
         videoElement.style.height = height + 'px';
       }
@@ -600,24 +752,18 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       
       if (!videoElement) return;
       
-      // 先停止当前播放
       videoPlayer.stop();
       
-      // 显示预览框
       el.videoPreviewContainer.style.display = 'block';
       
-      // 更新频道名称
       el.currentChannelName.textContent = channelName || '视频预览';
       
-      // 设置视频源
       videoElement.src = utils.cleanUrl(url);
       state.currentVideoUrl = url;
       
-      // 重置视频尺寸
       videoElement.style.width = '';
       videoElement.style.height = '';
       
-      // 尝试播放
       videoElement.load();
       videoElement.play().catch(e => {
         console.error('播放失败:', e);
@@ -652,9 +798,16 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           return state.data.filter(i => i.status === 'valid');
         case 'invalid':
           return state.data.filter(i => i.status === 'invalid');
-        default: // 'all'
+        case 'hd':
+          return state.data.filter(i => i.status === 'valid' && utils.isHDSource(i.resolutionWidth, i.resolutionHeight));
+        default:
           return state.data;
       }
+    },
+    
+    // 获取高清源数量 (1080P及以上)
+    getHDCount: () => {
+      return state.data.filter(i => i.status === 'valid' && utils.isHDSource(i.resolutionWidth, i.resolutionHeight)).length;
     },
     
     update: () => {
@@ -662,6 +815,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       const unique = new Set(state.data.map(i => i.url)).size;
       const valid = state.data.filter(i => i.status === 'valid').length;
       const invalid = state.data.filter(i => i.status === 'invalid').length;
+      const hdCount = core.getHDCount();
       
       const groupsSet = new Set();
       
@@ -677,13 +831,13 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       el.groupCount.textContent = state.allGroups.length;
       el.validCount.textContent = valid + '个有效';
       el.invalidCount.textContent = invalid + '个失效';
+      el.hdCount.textContent = hdCount;
       
-      // 更新选项卡计数
       el.countAll.textContent = count;
       el.countValid.textContent = valid;
       el.countInvalid.textContent = invalid;
+      el.countHD.textContent = hdCount;
       
-      // 获取过滤后的数据
       const filteredData = core.getFilteredData();
       
       if (filteredData.length === 0) {
@@ -696,6 +850,9 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
             case 'invalid':
               message = '暂无无效的直播源';
               break;
+            case 'hd':
+              message = '暂无高清源 (1080P及以上)';
+              break;
           }
         } else {
           message = '暂无直播源，请使用上方导入功能';
@@ -707,18 +864,23 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           const div = document.createElement('div');
           div.className = 'source-item';
           
-          // 只在有效项显示勾选框
           const checkboxHtml = i.status === 'valid' 
             ? `<input type="checkbox" class="source-checkbox" data-url="${i.url}" ${state.selectedUrls.has(i.url) ? 'checked' : ''} ${detector.running ? 'disabled' : ''}>`
-            : '<div style="width:16px"></div>'; // 占位符，保持对齐
+            : '<div style="width:16px"></div>';
         
-          // 播放按钮 - 只在有效和未检测项显示，无效项禁用
           const isPlayable = i.status !== 'invalid';
           const playBtnHtml = `<button class="play-btn" data-url="${i.url}" ${!isPlayable ? 'disabled' : ''}>播放</button>`;
+          
+          const resolutionHtml = i.resolution ? 
+            `<div class="resolution-display ${utils.getResolutionClass(i.resolutionWidth, i.resolutionHeight)}" title="分辨率: ${i.resolutionWidth}x${i.resolutionHeight}">
+              ${utils.formatResolution(i.resolutionWidth, i.resolutionHeight)}
+            </div>` : 
+            `<div class="resolution-display resolution-unknown" title="分辨率未知">未知</div>`;
           
           div.innerHTML = `
             ${checkboxHtml}
             <div class="channel-name" title="${i.channelName || i.group}">${i.channelName || i.group}</div>
+            ${resolutionHtml}
             <div class="source-url">${i.url}</div>
             <div class="status-container">
               <div class="status-badge status-${i.status}">
@@ -783,14 +945,12 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         sources: {}
       };
       
-      // 解析M3U格式标志
       const isM3U = t.includes('#EXTM3U') || t.includes('#EXTINF');
       
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         if (!line) continue;
         
-        // 处理分组行: 分组名称,#genre#分组名称
         if (line.includes(',#genre#')) {
           const match = line.match(/^(.*),#genre#(.*)$/);
           if (match) {
@@ -800,12 +960,9 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           continue;
         }
         
-        // 处理M3U格式的EXTINF行
         if (line.startsWith('#EXTINF:')) {
-          // 保存完整的EXTINF行
           const extinfLine = line;
           
-          // 尝试从EXTINF行提取信息
           let channelName = '';
           let group = currentGroup;
           let tvgId = '';
@@ -813,52 +970,43 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           let tvgLogo = '';
           let duration = '-1';
           
-          // 提取持续时间（-1前面的数字）
           const durationMatch = line.match(/^#EXTINF:([^,]+)/);
           if (durationMatch) {
             duration = durationMatch[1];
           }
           
-          // 尝试提取group-title
           const groupMatch = line.match(/group-title="([^"]+)"/i);
           if (groupMatch) {
             group = groupMatch[1];
           }
           
-          // 尝试提取tvg-id
           const tvgIdMatch = line.match(/tvg-id="([^"]+)"/i);
           if (tvgIdMatch) {
             tvgId = tvgIdMatch[1];
           }
           
-          // 尝试提取tvg-name
           const tvgNameMatch = line.match(/tvg-name="([^"]+)"/i);
           if (tvgNameMatch) {
             tvgName = tvgNameMatch[1];
           }
           
-          // 尝试提取tvg-logo
           const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/i);
           if (tvgLogoMatch) {
             tvgLogo = tvgLogoMatch[1];
           }
           
-          // 提取频道名称（逗号后的部分）
           const commaIndex = line.lastIndexOf(',');
           if (commaIndex > -1) {
             channelName = line.substring(commaIndex + 1).trim();
           }
           
-          // 如果没有从属性中获取到频道名称，使用tvg-name
           if (!channelName && tvgName) {
             channelName = tvgName;
           }
           
-          // 查找下一行的URL
           if (i + 1 < lines.length) {
             const nextLine = lines[i + 1].trim();
             if (nextLine && !nextLine.startsWith('#') && !nextLine.includes(',#genre#')) {
-              // 检查是否是URL
               const urlMatch = nextLine.match(/(https?:\/\/[^\s<>"']+)/gi);
               if (urlMatch && urlMatch[0]) {
                 const url = urlMatch[0].replace(/[\s,;'"`]+$/, '');
@@ -871,13 +1019,16 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
                     tvgId: tvgId,
                     tvgName: tvgName,
                     tvgLogo: tvgLogo,
-                    extinfLine: extinfLine, // 保存完整的EXTINF行
+                    extinfLine: extinfLine,
                     duration: duration,
-                    format: 'm3u', // 标记为M3U格式
+                    format: 'm3u',
                     status: 'unknown',
-                    detectionTime: 0
+                    detectionTime: 0,
+                    resolutionWidth: 0,
+                    resolutionHeight: 0,
+                    resolution: ''
                   });
-                  i++; // 跳过URL行
+                  i++;
                 }
               }
             }
@@ -887,30 +1038,25 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         
         if (line.startsWith('#') || line.startsWith('//')) continue;
         
-        // 尝试提取频道名称和URL (格式: 频道名称,URL)
         let channelName = currentGroup;
         let url = '';
         
         const commaIndex = line.indexOf(',');
         if (commaIndex > 0) {
-          // 如果有逗号，尝试解析为"频道名称,URL"格式
           const beforeComma = line.substring(0, commaIndex).trim();
           const afterComma = line.substring(commaIndex + 1).trim();
           
-          // 检查逗号后的部分是否是URL
           const urlMatch = afterComma.match(/(https?:\/\/[^\s<>"']+)/gi);
           if (urlMatch && urlMatch[0]) {
             channelName = beforeComma || currentGroup;
             url = urlMatch[0];
           } else {
-            // 如果不是"频道名称,URL"格式，则整个行可能是URL
             const matches = line.match(/(https?:\/\/[^\s<>"']+)/gi);
             if (matches) {
               url = matches[0];
             }
           }
         } else {
-          // 没有逗号，直接提取URL
           const matches = line.match(/(https?:\/\/[^\s<>"']+)/gi);
           if (matches) {
             url = matches[0];
@@ -928,9 +1074,12 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
               tvgId: '',
               tvgName: '',
               tvgLogo: '',
-              format: 'text', // 标记为文本格式
+              format: 'text',
               status: 'unknown',
-              detectionTime: 0
+              detectionTime: 0,
+              resolutionWidth: 0,
+              resolutionHeight: 0,
+              resolution: ''
             });
           }
         }
@@ -959,7 +1108,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     setFilter: (filter) => {
       state.currentFilter = filter;
       
-      // 更新选项卡激活状态
       document.querySelectorAll('.list-tab').forEach(tab => {
         if (tab.getAttribute('data-filter') === filter) {
           tab.classList.add('active');
@@ -968,7 +1116,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       });
       
-      // 更新列表显示
       core.update();
     },
     
@@ -999,7 +1146,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         return;
       }
       
-      // 获取勾选的有效数据
       const selectedData = state.data.filter(item => state.selectedUrls.has(item.url) && item.status === 'valid');
       
       if (selectedData.length === 0) {
@@ -1007,21 +1153,133 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         return;
       }
       
-      // 判断数据格式：如果至少有一个是M3U格式，就按M3U格式导出，否则按文本格式导出
       const hasM3UFormat = selectedData.some(item => item.format === 'm3u');
       
       if (hasM3UFormat) {
-        // 导出为M3U格式
         core.exportSelectedAsM3U(selectedData);
       } else {
-        // 导出为文本格式
         core.exportSelectedAsText(selectedData);
       }
     },
     
+    // 导出高清源 (1080P及以上)
+    exportHDSources: () => {
+      const hdSources = state.data.filter(item => 
+        item.status === 'valid' && utils.isHDSource(item.resolutionWidth, item.resolutionHeight)
+      );
+      
+      if (hdSources.length === 0) {
+        alert('没有找到高清源 (1080P及以上)，请先检测直播源分辨率');
+        return;
+      }
+      
+      const resolutionStats = {};
+      hdSources.forEach(item => {
+        const level = utils.getResolutionLevel(item.resolutionWidth, item.resolutionHeight);
+        if (!resolutionStats[level]) {
+          resolutionStats[level] = 0;
+        }
+        resolutionStats[level]++;
+      });
+      
+      let statsMsg = `找到 ${hdSources.length} 个高清源 (1080P及以上):\n`;
+      Object.keys(resolutionStats).forEach(level => {
+        statsMsg += `${level}: ${resolutionStats[level]}个\n`;
+      });
+      
+      const hasM3UFormat = hdSources.some(item => item.format === 'm3u');
+      
+      if (hasM3UFormat) {
+        core.exportHDSourcesAsM3U(hdSources, statsMsg);
+      } else {
+        core.exportHDSourcesAsText(hdSources, statsMsg);
+      }
+    },
+    
+    // 以M3U格式导出高清源
+    exportHDSourcesAsM3U: (hdSources, statsMsg) => {
+      const groupedData = {};
+      hdSources.forEach(item => {
+        if (!groupedData[item.group]) {
+          groupedData[item.group] = [];
+        }
+        groupedData[item.group].push(item);
+      });
+      
+      let m3uContent = '#EXTM3U\n';
+      m3uContent += `# 高清直播源导出 (1080P及以上)\n`;
+      m3uContent += `# 统计: ${statsMsg.replace(/\n/g, '\n# ')}\n`;
+      
+      Object.keys(groupedData).forEach(group => {
+        groupedData[group].forEach(item => {
+          if (item.format === 'm3u' && item.extinfLine) {
+            m3uContent += item.extinfLine + '\n';
+          } else {
+            const channelName = item.channelName || item.group;
+            const tvgId = item.tvgId || utils.generateId(channelName);
+            const tvgLogo = item.tvgLogo || '';
+            
+            const resolutionLevel = utils.getResolutionLevel(item.resolutionWidth, item.resolutionHeight);
+            const hdTag = ` [${resolutionLevel}]`;
+            m3uContent += `#EXTINF:-1 tvg-id="${tvgId}" tvg-name="${channelName}${hdTag}"`;
+            if (tvgLogo) {
+              m3uContent += ` tvg-logo="${tvgLogo}"`;
+            }
+            if (item.resolutionWidth && item.resolutionHeight) {
+              m3uContent += ` tvg-resolution="${item.resolutionWidth}x${item.resolutionHeight}"`;
+            }
+            m3uContent += ` group-title="${group}",${channelName}${hdTag}\n`;
+          }
+          
+          m3uContent += item.url + '\n';
+        });
+      });
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `高清直播源_${hdSources.length}个_${timestamp}.m3u`;
+      
+      utils.exportToFile(m3uContent, filename);
+      
+      alert(`已导出 ${hdSources.length} 个高清直播源到 ${filename} (M3U格式)\n\n${statsMsg}`);
+    },
+    
+    // 以文本格式导出高清源
+    exportHDSourcesAsText: (hdSources, statsMsg) => {
+      const groupedData = {};
+      hdSources.forEach(item => {
+        if (!groupedData[item.group]) {
+          groupedData[item.group] = [];
+        }
+        groupedData[item.group].push(item);
+      });
+      
+      let exportContent = `# 高清直播源导出 (1080P及以上)\n`;
+      exportContent += `# 统计: ${statsMsg.replace(/\n/g, '\n# ')}\n\n`;
+      
+      Object.keys(groupedData).forEach(group => {
+        exportContent += `${group},#genre#${group}\n`;
+        
+        groupedData[group].forEach(item => {
+          const resolutionLevel = utils.getResolutionLevel(item.resolutionWidth, item.resolutionHeight);
+          const hdTag = ` [${resolutionLevel}]`;
+          exportContent += `${item.channelName || item.group}${hdTag},${item.url}\n`;
+        });
+        
+        exportContent += '\n';
+      });
+      
+      exportContent = exportContent.trim();
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `高清直播源_${hdSources.length}个_${timestamp}.txt`;
+      
+      utils.exportToFile(exportContent, filename);
+      
+      alert(`已导出 ${hdSources.length} 个高清直播源到 ${filename} (文本格式)\n\n${statsMsg}`);
+    },
+    
     // 以M3U格式导出
     exportSelectedAsM3U: (selectedData) => {
-      // 按分组组织数据
       const groupedData = {};
       selectedData.forEach(item => {
         if (!groupedData[item.group]) {
@@ -1030,39 +1288,34 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         groupedData[item.group].push(item);
       });
       
-      // 生成M3U内容
       let m3uContent = '#EXTM3U\n';
       
       Object.keys(groupedData).forEach(group => {
-        // 添加分组下的所有频道
         groupedData[group].forEach(item => {
           if (item.format === 'm3u' && item.extinfLine) {
-            // 如果是M3U格式且有保存的EXTINF行，使用保存的行
             m3uContent += item.extinfLine + '\n';
           } else {
-            // 否则生成新的EXTINF行
             const channelName = item.channelName || item.group;
             const tvgId = item.tvgId || utils.generateId(channelName);
             const tvgLogo = item.tvgLogo || '';
             
-            // 生成EXTINF行
             m3uContent += `#EXTINF:-1 tvg-id="${tvgId}" tvg-name="${channelName}"`;
             if (tvgLogo) {
               m3uContent += ` tvg-logo="${tvgLogo}"`;
             }
+            if (item.resolutionWidth && item.resolutionHeight) {
+              m3uContent += ` tvg-resolution="${item.resolutionWidth}x${item.resolutionHeight}"`;
+            }
             m3uContent += ` group-title="${group}",${channelName}\n`;
           }
           
-          // 添加URL行
           m3uContent += item.url + '\n';
         });
       });
       
-      // 生成文件名
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `直播源_M3U_${state.selectedUrls.size}个_${timestamp}.m3u`;
       
-      // 导出文件
       utils.exportToFile(m3uContent, filename);
       
       alert(`已导出 ${state.selectedUrls.size} 个直播源到 ${filename} (M3U格式)`);
@@ -1070,7 +1323,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     
     // 以文本格式导出
     exportSelectedAsText: (selectedData) => {
-      // 按分组组织数据
       const groupedData = {};
       selectedData.forEach(item => {
         if (!groupedData[item.group]) {
@@ -1079,31 +1331,25 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         groupedData[item.group].push(item);
       });
       
-      // 生成导出内容
       let exportContent = '';
       
-      // 添加分组和频道
       Object.keys(groupedData).forEach(group => {
-        // 添加分组行
         exportContent += `${group},#genre#${group}\n`;
         
-        // 添加该分组下的所有频道
         groupedData[group].forEach(item => {
-          exportContent += `${item.channelName || item.group},${item.url}\n`;
+          const resolutionInfo = item.resolutionWidth && item.resolutionHeight ? 
+            ` [${utils.formatResolution(item.resolutionWidth, item.resolutionHeight)}]` : '';
+          exportContent += `${item.channelName || item.group}${resolutionInfo},${item.url}\n`;
         });
         
-        // 分组之间添加空行
         exportContent += '\n';
       });
       
-      // 移除最后一个空行
       exportContent = exportContent.trim();
       
-      // 生成文件名
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const filename = `直播源_文本_${state.selectedUrls.size}个_${timestamp}.txt`;
       
-      // 导出文件
       utils.exportToFile(exportContent, filename);
       
       alert(`已导出 ${state.selectedUrls.size} 个直播源到 ${filename} (文本格式)`);
@@ -1130,13 +1376,13 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     }
   };
   
-  // 检测器 - 使用修改后的检测方法（方案1：必须loadeddata + 至少一个播放事件）
+  // 检测器
   const detector = {
     queue: [],
     workers: [],
-    timeout: 10000, // 默认10秒，因为需要等待多个事件
+    timeout: 10000,
     delay: 200,
-    concurrency: 8, // 稍微减少并发，避免资源占用过高
+    concurrency: 8,
     running: false,
     
     init: () => {
@@ -1160,34 +1406,34 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       detector.concurrency = parseInt(el.concurrencySlider.value);
     },
     
-    // 使用方案1的检测方法：必须loadeddata + 至少一个播放事件
     testSource: (source, index) => {
       return new Promise((resolve) => {
         const timeout = detector.timeout;
         const video = document.createElement('video');
-        video.muted = true; // 静音避免声音干扰
-        video.preload = 'auto'; // 预加载
-        video.style.display = 'none'; // 隐藏视频元素
+        video.muted = true;
+        video.preload = 'auto';
+        video.style.display = 'none';
         
-        // 事件标志
         let loadedDataTriggered = false;
         let canPlayTriggered = false;
-        let canPlayThroughTriggered = false;
         let hasError = false;
         let resolved = false;
+        let resolutionWidth = 0;
+        let resolutionHeight = 0;
         
         let timer = setTimeout(() => {
           if (resolved) return;
           cleanup();
           
-          // 超时判定规则：必须loadeddata + (canplay或canplaythrough)
-          if (loadedDataTriggered && (canPlayTriggered || canPlayThroughTriggered)) {
+          if (loadedDataTriggered && canPlayTriggered) {
             const detectionTime = Date.now() - startTime;
             resolve({ 
               index, 
               status: 'valid', 
               detectionTime,
-              reason: `loadeddata + ${canPlayTriggered ? 'canplay' : 'canplaythrough'}`
+              resolutionWidth,
+              resolutionHeight,
+              reason: 'loadeddata + canplay'
             });
           } else {
             const detectionTime = Date.now() - startTime;
@@ -1195,7 +1441,9 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
               index, 
               status: 'invalid', 
               detectionTime,
-              reason: `条件不足: loadedData=${loadedDataTriggered}, canPlay=${canPlayTriggered}, canPlayThrough=${canPlayThroughTriggered}`
+              resolutionWidth: 0,
+              resolutionHeight: 0,
+              reason: `条件不足: loadedData=${loadedDataTriggered}, canPlay=${canPlayTriggered}`
             });
           }
           resolved = true;
@@ -1215,44 +1463,36 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         function checkSuccess() {
           if (resolved) return;
           
-          // 核心判定：必须loadeddata + (canplay或canplaythrough至少一个)
-          if (loadedDataTriggered && (canPlayTriggered || canPlayThroughTriggered)) {
+          if (loadedDataTriggered && canPlayTriggered) {
+            resolutionWidth = video.videoWidth || 0;
+            resolutionHeight = video.videoHeight || 0;
+            
             const detectionTime = Date.now() - startTime;
             cleanup();
             resolve({ 
               index, 
               status: 'valid', 
               detectionTime,
-              reason: loadedDataTriggered && canPlayTriggered && canPlayThroughTriggered 
-                ? '三个事件全部触发' 
-                : '两个关键事件触发'
+              resolutionWidth,
+              resolutionHeight,
+              reason: 'loadeddata + canplay'
             });
             resolved = true;
           }
         }
         
-        // loadeddata事件
         video.onloadeddata = () => {
           if (hasError || resolved) return;
           loadedDataTriggered = true;
           checkSuccess();
         };
         
-        // canplay事件
         video.oncanplay = () => {
           if (hasError || resolved) return;
           canPlayTriggered = true;
           checkSuccess();
         };
         
-        // canplaythrough事件
-        video.oncanplaythrough = () => {
-          if (hasError || resolved) return;
-          canPlayThroughTriggered = true;
-          checkSuccess();
-        };
-        
-        // error事件
         video.onerror = () => {
           if (resolved) return;
           hasError = true;
@@ -1262,19 +1502,18 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
             index, 
             status: 'invalid', 
             detectionTime,
+            resolutionWidth: 0,
+            resolutionHeight: 0,
             reason: '视频加载错误'
           });
           resolved = true;
         };
         
-        // 设置视频源并开始加载
         video.src = utils.cleanUrl(source.url);
-        document.body.appendChild(video); // 添加到DOM以便加载
+        document.body.appendChild(video);
         video.load();
         
-        // 尝试播放（静音状态下通常会被允许）
         video.play().catch(() => {
-          // 自动播放被阻止是正常的，不影响检测
         });
       });
     },
@@ -1304,31 +1543,41 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     },
     
     processResult: (result) => {
-      const { index, status, detectionTime, reason } = result;
+      const { index, status, detectionTime, resolutionWidth, resolutionHeight, reason } = result;
       const source = state.data[index];
       
       if (source) {
         const wasValid = source.status === 'valid';
         source.status = status;
         source.detectionTime = detectionTime;
+        source.resolutionWidth = resolutionWidth;
+        source.resolutionHeight = resolutionHeight;
+        
+        if (resolutionWidth > 0 && resolutionHeight > 0) {
+          source.resolution = `${resolutionWidth}x${resolutionHeight}`;
+        } else {
+          source.resolution = '';
+        }
         
         state.detectionStats.processed++;
         state.detectionStats.totalTime += detectionTime;
         
         if (status === 'valid') {
-          // 如果是新检测为有效的项，自动勾选
           if (!wasValid) {
             state.selectedUrls.add(source.url);
           }
           state.detectionStats.valid++;
         } else {
-          // 如果是无效项，从勾选列表中移除
           state.selectedUrls.delete(source.url);
           state.detectionStats.invalid++;
         }
         
-        // 输出详细检测结果到控制台
-        console.log(`检测结果 [${index}]: ${status}, 耗时: ${utils.formatTime(detectionTime)}, 原因: ${reason}`);
+        let resolutionInfo = '';
+        if (resolutionWidth > 0 && resolutionHeight > 0) {
+          const resolutionLevel = utils.getResolutionLevel(resolutionWidth, resolutionHeight);
+          resolutionInfo = `, 分辨率: ${resolutionLevel} (${resolutionWidth}x${resolutionHeight})`;
+        }
+        console.log(`检测结果 [${index}]: ${status}, 耗时: ${utils.formatTime(detectionTime)}${resolutionInfo}, 原因: ${reason}`);
         
         detector.updateProgress();
       }
@@ -1348,8 +1597,17 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       }
     },
     
-    start: async () => {
-      if (detector.running || state.data.length === 0) return;
+    // 修复：添加自定义队列参数以支持分组检测
+    start: async (customQueue) => {
+      if (detector.running) return;
+      
+      // 使用自定义队列或默认队列
+      const queue = customQueue || state.data.map((source, index) => ({ source, index }));
+      
+      if (queue.length === 0) {
+        alert('没有要检测的直播源');
+        return;
+      }
       
       detector.running = true;
       state.detectionStats = {
@@ -1367,7 +1625,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       el.testBtn.classList.remove('green');
       el.testBtn.classList.add('red');
       
-      detector.queue = state.data.map((source, index) => ({ source, index }));
+      detector.queue = queue;
       
       detector.workers = [];
       const workerCount = Math.min(detector.concurrency, detector.queue.length);
@@ -1395,7 +1653,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       el.testBtn.classList.remove('red');
       el.testBtn.classList.add('green');
       
-      // 检测完成后，自动勾选所有有效项
       core.autoSelectAllValid();
       
       if (state.detectionStats.processed > 0) {
@@ -1410,13 +1667,10 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
   // 事件处理
   const events = {
     init: () => {
-      // 初始化视频播放器
       videoPlayer.init();
       
-      // 初始化检测器
       detector.init();
       
-      // 测试按钮事件
       el.testBtn.onclick = () => {
         if (state.data.length === 0) {
           alert('请先导入直播源');
@@ -1430,7 +1684,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       };
       
-      // 清空按钮事件
       document.getElementById('clearBtn').onclick = () => {
         if (state.data.length && confirm('清空所有直播源？')) {
           state.data = [];
@@ -1442,34 +1695,27 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       };
       
-      // 本地导入按钮事件
       document.getElementById('localImportBtn').onclick = () => el.fileInput.click();
       
-      // 网络导入按钮事件
       document.getElementById('networkImportBtn').onclick = () => {
         el.networkUrl.value = '';
         el.networkStatus.style.display = 'none';
         el.modal.style.display = 'block';
-        el.networkUrl.focus();
       };
       
-      // 频道管理按钮事件
       document.getElementById('groupBtn').onclick = () => {
         state.selectedGroups = [...state.allGroups];
         el.groupModal.style.display = 'block';
         core.updateGroupCheckboxes();
       };
       
-      // 关闭频道管理模态框
       document.getElementById('closeGroupBtn').onclick = () => el.groupModal.style.display = 'none';
       
-      // 取消网络导入
       document.getElementById('cancelImportBtn').onclick = () => {
         el.modal.style.display = 'none';
         document.getElementById('confirmImportBtn').disabled = false;
       };
       
-      // 文件选择事件
       el.fileInput.onchange = e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1487,7 +1733,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         el.fileInput.value = '';
       };
       
-      // 确认网络导入
       document.getElementById('confirmImportBtn').onclick = async () => {
         const url = el.networkUrl.value.trim();
         const cleaned = utils.cleanUrl(url);
@@ -1530,40 +1775,38 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         document.getElementById('confirmImportBtn').disabled = false;
       };
       
-      // 全选分组
       document.getElementById('selectAllGroupsBtn').onclick = () => {
         state.selectedGroups = [...state.allGroups];
         core.updateGroupCheckboxes();
       };
       
-      // 取消全选分组
       document.getElementById('deselectAllGroupsBtn').onclick = () => {
         state.selectedGroups = [];
         core.updateGroupCheckboxes();
       };
       
-      // 检测选中分组
+      // 修复分组检测问题
       document.getElementById('testSelectedGroupsBtn').onclick = async () => {
         if (state.selectedGroups.length === 0) {
           alert('请至少选择一个分组');
           return;
         }
         
-        const sources = state.data.filter(i => state.selectedGroups.includes(i.group));
-        if (sources.length === 0) {
+        // 创建只包含选中分组数据的队列
+        const customQueue = state.data
+          .map((source, index) => ({ source, index }))
+          .filter(item => state.selectedGroups.includes(item.source.group));
+        
+        if (customQueue.length === 0) {
           alert('选中的分组没有直播源');
           return;
         }
         
-        const originalData = [...state.data];
-        data = sources;
-        await detector.start();
-        state.data = originalData;
+        await detector.start(customQueue);
         core.update();
         el.groupModal.style.display = 'none';
       };
       
-      // 列表选项卡点击事件
       el.listTabs.addEventListener('click', (e) => {
         const tab = e.target.closest('.list-tab');
         if (tab) {
@@ -1574,7 +1817,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       });
       
-      // 列表项勾选框事件委托 - 只对有效项处理
       el.sourceList.addEventListener('change', (e) => {
         if (e.target.classList.contains('source-checkbox')) {
           const url = e.target.getAttribute('data-url');
@@ -1583,7 +1825,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       });
       
-      // 播放按钮事件委托
       el.sourceList.addEventListener('click', (e) => {
         if (e.target.classList.contains('play-btn') && !e.target.disabled) {
           const url = e.target.getAttribute('data-url');
@@ -1594,7 +1835,6 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       });
       
-      // 分组复选框点击事件
       el.groupCheckboxes.addEventListener('click', (e) => {
         const groupItem = e.target.closest('.group-item');
         if (groupItem) {
@@ -1603,22 +1843,22 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         }
       });
       
-      // 全部勾选按钮
       el.selectAllBtn.onclick = () => {
         core.selectAllCurrent();
       };
       
-      // 全部取消按钮
       el.deselectAllBtn.onclick = () => {
         core.deselectAllCurrent();
       };
       
-      // 导出勾选按钮 - 智能判断格式
       el.exportSelectedBtn.onclick = () => {
         core.exportSelected();
       };
       
-      // 模态框点击外部关闭
+      el.exportHDBtn.onclick = () => {
+        core.exportHDSources();
+      };
+      
       el.modal.onclick = e => {
         if (e.target === el.modal) {
           el.modal.style.display = 'none';
