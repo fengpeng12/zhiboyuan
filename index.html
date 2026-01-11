@@ -265,8 +265,8 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       
       <div class="control-row">
         <span class="control-label">检测超时(秒):</span>
-        <input type="range" class="control-slider" id="timeoutSlider" min="1" max="20" value="5">
-        <span class="control-value" id="timeoutValue">5秒</span>
+        <input type="range" class="control-slider" id="timeoutSlider" min="1" max="20" value="10">
+        <span class="control-value" id="timeoutValue">10秒</span>
       </div>
       
       <div class="control-row">
@@ -277,8 +277,8 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       
       <div class="control-row">
         <span class="control-label">并发数量:</span>
-        <input type="range" class="control-slider" id="concurrencySlider" min="3" max="50" value="10">
-        <span class="control-value" id="concurrencyValue">10个</span>
+        <input type="range" class="control-slider" id="concurrencySlider" min="3" max="50" value="8">
+        <span class="control-value" id="concurrencyValue">8个</span>
       </div>
       
       <div class="progress-bar">
@@ -1130,13 +1130,13 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     }
   };
   
-  // 检测器 - 使用第一个文件中的可靠检测方法
+  // 检测器 - 使用修改后的检测方法（方案1：必须loadeddata + 至少一个播放事件）
   const detector = {
     queue: [],
     workers: [],
-    timeout: 5000,
+    timeout: 10000, // 默认10秒，因为需要等待多个事件
     delay: 200,
-    concurrency: 10,
+    concurrency: 8, // 稍微减少并发，避免资源占用过高
     running: false,
     
     init: () => {
@@ -1160,26 +1160,47 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       detector.concurrency = parseInt(el.concurrencySlider.value);
     },
     
-    // 使用第一个文件中可靠的检测方法
+    // 使用方案1的检测方法：必须loadeddata + 至少一个播放事件
     testSource: (source, index) => {
       return new Promise((resolve) => {
-        const timeout = detector.timeout; // 使用当前设置的超时时间
+        const timeout = detector.timeout;
         const video = document.createElement('video');
         video.muted = true; // 静音避免声音干扰
         video.preload = 'auto'; // 预加载
         video.style.display = 'none'; // 隐藏视频元素
         
+        // 事件标志
+        let loadedDataTriggered = false;
+        let canPlayTriggered = false;
+        let canPlayThroughTriggered = false;
+        let hasError = false;
+        let resolved = false;
+        
         let timer = setTimeout(() => {
+          if (resolved) return;
           cleanup();
-          resolve({ 
-            index, 
-            status: 'invalid', 
-            detectionTime: timeout,
-            reason: '超时'
-          });
+          
+          // 超时判定规则：必须loadeddata + (canplay或canplaythrough)
+          if (loadedDataTriggered && (canPlayTriggered || canPlayThroughTriggered)) {
+            const detectionTime = Date.now() - startTime;
+            resolve({ 
+              index, 
+              status: 'valid', 
+              detectionTime,
+              reason: `loadeddata + ${canPlayTriggered ? 'canplay' : 'canplaythrough'}`
+            });
+          } else {
+            const detectionTime = Date.now() - startTime;
+            resolve({ 
+              index, 
+              status: 'invalid', 
+              detectionTime,
+              reason: `条件不足: loadedData=${loadedDataTriggered}, canPlay=${canPlayTriggered}, canPlayThrough=${canPlayThroughTriggered}`
+            });
+          }
+          resolved = true;
         }, timeout);
         
-        // 记录开始时间
         const startTime = Date.now();
         
         function cleanup() {
@@ -1191,44 +1212,50 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           }
         }
         
-        // 成功加载视频数据
+        function checkSuccess() {
+          if (resolved) return;
+          
+          // 核心判定：必须loadeddata + (canplay或canplaythrough至少一个)
+          if (loadedDataTriggered && (canPlayTriggered || canPlayThroughTriggered)) {
+            const detectionTime = Date.now() - startTime;
+            cleanup();
+            resolve({ 
+              index, 
+              status: 'valid', 
+              detectionTime,
+              reason: loadedDataTriggered && canPlayTriggered && canPlayThroughTriggered 
+                ? '三个事件全部触发' 
+                : '两个关键事件触发'
+            });
+            resolved = true;
+          }
+        }
+        
+        // loadeddata事件
         video.onloadeddata = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '成功加载视频数据'
-          });
+          if (hasError || resolved) return;
+          loadedDataTriggered = true;
+          checkSuccess();
         };
         
-        // 视频可以播放
+        // canplay事件
         video.oncanplay = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '视频可以播放'
-          });
+          if (hasError || resolved) return;
+          canPlayTriggered = true;
+          checkSuccess();
         };
         
-        // 视频可以流畅播放
+        // canplaythrough事件
         video.oncanplaythrough = () => {
-          const detectionTime = Date.now() - startTime;
-          cleanup();
-          resolve({ 
-            index, 
-            status: 'valid', 
-            detectionTime,
-            reason: '视频可以流畅播放'
-          });
+          if (hasError || resolved) return;
+          canPlayThroughTriggered = true;
+          checkSuccess();
         };
         
-        // 视频加载错误
+        // error事件
         video.onerror = () => {
+          if (resolved) return;
+          hasError = true;
           const detectionTime = Date.now() - startTime;
           cleanup();
           resolve({ 
@@ -1237,6 +1264,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
             detectionTime,
             reason: '视频加载错误'
           });
+          resolved = true;
         };
         
         // 设置视频源并开始加载
@@ -1276,7 +1304,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
     },
     
     processResult: (result) => {
-      const { index, status, detectionTime } = result;
+      const { index, status, detectionTime, reason } = result;
       const source = state.data[index];
       
       if (source) {
@@ -1299,6 +1327,9 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
           state.detectionStats.invalid++;
         }
         
+        // 输出详细检测结果到控制台
+        console.log(`检测结果 [${index}]: ${status}, 耗时: ${utils.formatTime(detectionTime)}, 原因: ${reason}`);
+        
         detector.updateProgress();
       }
     },
@@ -1317,19 +1348,8 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       }
     },
     
-    // 修改start方法，添加分组过滤参数
-    start: async (selectedGroups) => {
+    start: async () => {
       if (detector.running || state.data.length === 0) return;
-      
-      // 如果传入了选中的分组，则只检测这些分组的源
-      let sourcesToTest = state.data;
-      if (selectedGroups && selectedGroups.length > 0) {
-        sourcesToTest = state.data.filter(source => selectedGroups.includes(source.group));
-        if (sourcesToTest.length === 0) {
-          alert('选中的分组没有直播源');
-          return;
-        }
-      }
       
       detector.running = true;
       state.detectionStats = {
@@ -1347,11 +1367,7 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
       el.testBtn.classList.remove('green');
       el.testBtn.classList.add('red');
       
-      // 使用过滤后的源创建队列
-      detector.queue = sourcesToTest.map((source, index) => ({ 
-        source, 
-        index: state.data.indexOf(source) // 使用原始索引
-      }));
+      detector.queue = state.data.map((source, index) => ({ source, index }));
       
       detector.workers = [];
       const workerCount = Math.min(detector.concurrency, detector.queue.length);
@@ -1526,14 +1542,24 @@ body{margin:0;padding:5px;background:#f5f5f5;font-family:sans-serif}
         core.updateGroupCheckboxes();
       };
       
-      // 修复后的检测选中分组功能
+      // 检测选中分组
       document.getElementById('testSelectedGroupsBtn').onclick = async () => {
         if (state.selectedGroups.length === 0) {
           alert('请至少选择一个分组');
           return;
         }
         
-        await detector.start(state.selectedGroups);
+        const sources = state.data.filter(i => state.selectedGroups.includes(i.group));
+        if (sources.length === 0) {
+          alert('选中的分组没有直播源');
+          return;
+        }
+        
+        const originalData = [...state.data];
+        data = sources;
+        await detector.start();
+        state.data = originalData;
+        core.update();
         el.groupModal.style.display = 'none';
       };
       
